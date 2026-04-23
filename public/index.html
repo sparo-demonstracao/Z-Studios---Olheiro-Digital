@@ -1,0 +1,2659 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Olheiro Digital — Z Studios</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          display: ['Space Grotesk', 'Inter', 'sans-serif'],
+        },
+        colors: {
+          ink: {
+            950: '#07070c',
+            900: '#0b0b14',
+            850: '#10101c',
+            800: '#151524',
+            700: '#1d1d30',
+            600: '#272740',
+            500: '#3a3a58',
+          },
+          brand: {
+            50:  '#f5f0ff',
+            100: '#ece1ff',
+            200: '#d6c0ff',
+            300: '#b794ff',
+            400: '#9465ff',
+            500: '#7a3dff',
+            600: '#6821ef',
+            700: '#5617c7',
+            800: '#4613a0',
+            900: '#2d0a66',
+          },
+          accent: {
+            lime: '#c6ff3d',
+            green: '#1db954',
+            pink: '#ff3da8',
+          }
+        },
+        boxShadow: {
+          glow: '0 0 40px -8px rgba(122,61,255,0.55)',
+          card: '0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 30px rgba(0,0,0,0.35)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html, body { background: #07070c; }
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #e6e6f0;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, rgba(122,61,255,0.18), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(198,255,61,0.08), transparent 60%),
+      linear-gradient(180deg, #07070c 0%, #0a0a14 100%);
+    min-height: 100vh;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1d1d30; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: #272740; }
+
+  .glass {
+    background: linear-gradient(180deg, rgba(29,29,48,0.6) 0%, rgba(16,16,28,0.6) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  #notifPanel.glass {
+    background: linear-gradient(180deg, rgba(29,29,48,0.96) 0%, rgba(16,16,28,0.96) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-color: rgba(255,255,255,0.1);
+  }
+  .glass-hover:hover {
+    border-color: rgba(180,148,255,0.35);
+    transition: all .25s ease;
+  }
+  .ring-brand { box-shadow: 0 0 0 1px rgba(122,61,255,0.45), 0 8px 30px rgba(122,61,255,0.15); }
+
+  .kpi-shine {
+    position: relative; overflow: hidden;
+  }
+  .kpi-shine::after {
+    content:''; position:absolute; inset:-1px; border-radius: inherit;
+    background: conic-gradient(from 180deg at 50% 50%, rgba(122,61,255,0) 0deg, rgba(122,61,255,.35) 120deg, rgba(122,61,255,0) 240deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    padding: 1px; pointer-events:none; opacity:.7;
+  }
+
+  .pulse-dot {
+    position: relative; display:inline-block;
+    width:8px; height:8px; border-radius:50%; background:#c6ff3d;
+  }
+  .pulse-dot::before {
+    content:''; position:absolute; inset:-4px; border-radius:50%;
+    background: rgba(198,255,61,.35); animation: pulse 1.6s ease-out infinite;
+  }
+  @keyframes pulse { 0%{transform:scale(.6);opacity:.8} 100%{transform:scale(1.8);opacity:0} }
+
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast-enter { transform: translateY(20px); opacity:0; }
+  .toast-enter-active { transform: translateY(0); opacity:1; transition: all .35s cubic-bezier(.2,.9,.3,1.2); }
+  .toast-exit-active { transform: translateY(12px); opacity:0; transition: all .3s ease; }
+
+  .row-hover:hover { background: linear-gradient(90deg, rgba(122,61,255,0.06), rgba(122,61,255,0.00) 70%); }
+
+  .badge {
+    display:inline-flex; align-items:center; gap:6px;
+    padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight:600;
+    letter-spacing: .02em;
+  }
+  .badge-hot { background: rgba(255,61,168,0.12); color:#ff86c8; border:1px solid rgba(255,61,168,0.3); }
+  .badge-viral { background: rgba(198,255,61,0.12); color:#d6ff6b; border:1px solid rgba(198,255,61,0.3); }
+  .badge-stable { background: rgba(148,148,200,0.1); color:#b3b3d0; border:1px solid rgba(148,148,200,0.25); }
+
+  .nav-item { transition: all .2s ease; }
+  .nav-item.active {
+    background: linear-gradient(180deg, rgba(122,61,255,0.18), rgba(122,61,255,0.08));
+    border: 1px solid rgba(122,61,255,0.35);
+    color: #fff;
+  }
+  .nav-item:not(.active):hover { background: rgba(255,255,255,0.04); color: #fff; }
+
+  .grad-text {
+    background: linear-gradient(135deg, #fff 0%, #b794ff 60%, #7a3dff 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  .btn-primary {
+    background: linear-gradient(180deg, #7a3dff 0%, #5617c7 100%);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 6px 20px -6px rgba(122,61,255,0.7), inset 0 1px 0 rgba(255,255,255,0.15);
+    transition: transform .15s ease, box-shadow .2s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 30px -6px rgba(122,61,255,0.85), inset 0 1px 0 rgba(255,255,255,0.2); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-success {
+    background: linear-gradient(180deg, #2ad07a 0%, #1a8a4d 100%) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    box-shadow: 0 6px 20px -6px rgba(42,208,122,0.6), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+  }
+
+  .email-preview {
+    background: #0e0e18;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+  }
+  details[open] .chev { transform: rotate(180deg); }
+  .chev { transition: transform .2s ease; }
+
+  .avatar-gradient-1 { background: linear-gradient(135deg, #ff3da8, #7a3dff); }
+  .avatar-gradient-2 { background: linear-gradient(135deg, #1db954, #0ea5e9); }
+  .avatar-gradient-3 { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .avatar-gradient-4 { background: linear-gradient(135deg, #7a3dff, #0ea5e9); }
+  .avatar-gradient-5 { background: linear-gradient(135deg, #c6ff3d, #1db954); }
+
+  .modal-backdrop {
+    background: rgba(7,7,12,0.7);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Painel inline de Filtros/Ordenar no Radar */
+  .panel-tab {
+    color: rgba(255,255,255,0.55);
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all .15s ease;
+  }
+  .panel-tab:hover { color: #fff; background: rgba(255,255,255,0.04); }
+  .panel-tab.active {
+    color: #fff;
+    background: rgba(122,61,255,0.2);
+    border-color: rgba(122,61,255,0.4);
+  }
+  .sort-option {
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.8);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .sort-option:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .sort-option.active {
+    background: rgba(122,61,255,0.18);
+    border-color: rgba(122,61,255,0.45);
+    color: #fff;
+  }
+  .sort-field-chip {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.75);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .sort-field-chip:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .sort-field-chip.active {
+    background: rgba(122,61,255,0.2);
+    border-color: rgba(122,61,255,0.45);
+    color: #fff;
+  }
+  .sort-dir-btn {
+    color: rgba(255,255,255,0.6);
+    transition: all .15s ease;
+  }
+  .sort-dir-btn:hover { color: #fff; }
+  .sort-dir-btn.active {
+    background: rgba(122,61,255,0.25);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(122,61,255,0.3);
+  }
+
+  /* ============================
+     LIGHT MODE OVERRIDES
+     ============================ */
+  [data-theme="light"] { color-scheme: light; }
+  [data-theme="light"] html,
+  [data-theme="light"] body { background: #f4f3fa; }
+  [data-theme="light"] body {
+    color: #1a1a2e;
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, rgba(122,61,255,0.12), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(29,185,84,0.08), transparent 60%),
+      linear-gradient(180deg, #f6f5fb 0%, #eeecf5 100%);
+  }
+  [data-theme="light"] ::-webkit-scrollbar-thumb { background: #d6d3e4; }
+  [data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #bdb9d1; }
+
+  /* Surfaces */
+  [data-theme="light"] .glass {
+    background: linear-gradient(180deg, #ffffff 0%, #fafaff 100%);
+    border: 1px solid rgba(26,26,46,0.07);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 4px 16px rgba(26,26,46,0.05);
+  }
+  [data-theme="light"] .glass-hover:hover {
+    border-color: rgba(122,61,255,0.35);
+    box-shadow: 0 8px 24px rgba(122,61,255,0.12);
+  }
+
+  /* Text colors */
+  [data-theme="light"] .text-white { color: #1a1a2e !important; }
+  [data-theme="light"] .text-white\/90 { color: rgba(26,26,46,0.92) !important; }
+  [data-theme="light"] .text-white\/80 { color: rgba(26,26,46,0.8) !important; }
+  [data-theme="light"] .text-white\/70 { color: rgba(26,26,46,0.72) !important; }
+  [data-theme="light"] .text-white\/60 { color: rgba(26,26,46,0.6) !important; }
+  [data-theme="light"] .text-white\/50 { color: rgba(26,26,46,0.5) !important; }
+  [data-theme="light"] .text-white\/45 { color: rgba(26,26,46,0.5) !important; }
+  [data-theme="light"] .text-white\/40 { color: rgba(26,26,46,0.45) !important; }
+
+  /* Borders */
+  [data-theme="light"] .border-white\/5 { border-color: rgba(26,26,46,0.08) !important; }
+  [data-theme="light"] .border-white\/10 { border-color: rgba(26,26,46,0.12) !important; }
+  [data-theme="light"] .divide-white\/5 > * + * { border-color: rgba(26,26,46,0.07) !important; }
+  [data-theme="light"] .ring-ink-900 { --tw-ring-color: #ffffff !important; box-shadow: 0 0 0 2px #ffffff !important; }
+
+  /* Background surfaces */
+  [data-theme="light"] .bg-ink-950\/70 { background-color: rgba(246,245,251,0.85) !important; }
+  [data-theme="light"] .bg-ink-850\/40 { background-color: rgba(26,26,46,0.03) !important; }
+  [data-theme="light"] .bg-ink-800\/70 { background-color: #ffffff !important; }
+  [data-theme="light"] .bg-ink-800 { background-color: #ffffff !important; }
+  [data-theme="light"] .bg-ink-700 { background-color: #f0eef7 !important; }
+
+  /* Chips on white/x backgrounds */
+  [data-theme="light"] .bg-white\/5 { background-color: rgba(26,26,46,0.05) !important; }
+  [data-theme="light"] .bg-white\/10 { background-color: rgba(26,26,46,0.08) !important; }
+  [data-theme="light"] .hover\:bg-white\/5:hover { background-color: rgba(26,26,46,0.05) !important; }
+  [data-theme="light"] .hover\:bg-white\/10:hover { background-color: rgba(26,26,46,0.09) !important; }
+
+  /* Placeholder */
+  [data-theme="light"] .placeholder-white\/40::placeholder { color: rgba(26,26,46,0.45) !important; }
+
+  /* Row hover on table */
+  [data-theme="light"] .row-hover:hover {
+    background: linear-gradient(90deg, rgba(122,61,255,0.06), rgba(122,61,255,0) 70%);
+  }
+
+  /* Nav active */
+  [data-theme="light"] .nav-item.active {
+    background: linear-gradient(180deg, rgba(122,61,255,0.12), rgba(122,61,255,0.04));
+    border-color: rgba(122,61,255,0.3);
+    color: #4613a0;
+  }
+  [data-theme="light"] .nav-item:not(.active):hover { background: rgba(26,26,46,0.05); color: #1a1a2e; }
+
+  /* Gradient text */
+  [data-theme="light"] .grad-text {
+    background: linear-gradient(135deg, #1a1a2e 0%, #6821ef 60%, #7a3dff 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* Badges */
+  [data-theme="light"] .badge-stable {
+    background: rgba(26,26,46,0.05); color: #4a4a6a; border-color: rgba(26,26,46,0.12);
+  }
+  [data-theme="light"] .badge-viral {
+    background: rgba(29,185,84,0.12); color: #0f7a3a; border-color: rgba(29,185,84,0.35);
+  }
+  [data-theme="light"] .badge-hot {
+    background: rgba(255,61,168,0.1); color: #c81e7d; border-color: rgba(255,61,168,0.35);
+  }
+
+  /* Email preview */
+  [data-theme="light"] .email-preview {
+    background: #fafaff;
+    border-color: rgba(26,26,46,0.08);
+  }
+
+  /* TikTok icon bg for light */
+  [data-theme="light"] .tiktok-chip {
+    background: #f2f1f9 !important;
+    border-color: rgba(26,26,46,0.1) !important;
+  }
+  [data-theme="light"] .tiktok-chip svg path { fill: #1a1a2e !important; }
+
+  /* Modal backdrop */
+  [data-theme="light"] .modal-backdrop { background: rgba(26,26,46,0.35); }
+
+  /* KPI shine subtler */
+  [data-theme="light"] .kpi-shine::after { opacity: .35; }
+
+  /* Pagination active */
+  [data-theme="light"] .bg-brand-500\/25 { background-color: rgba(122,61,255,0.15) !important; }
+  [data-theme="light"] .border-brand-500\/40 { border-color: rgba(122,61,255,0.4) !important; }
+  [data-theme="light"] .text-brand-100,
+  [data-theme="light"] .text-brand-200 { color: #4613a0 !important; }
+
+  /* Engagement bar track */
+  [data-theme="light"] .bg-white\/5.rounded-full { background-color: rgba(26,26,46,0.08) !important; }
+
+  /* Genre chip */
+  [data-theme="light"] td .bg-white\/5 { background-color: rgba(26,26,46,0.05) !important; }
+
+  /* Icons on buttons keep purple accents; sidebar status card */
+  [data-theme="light"] .bg-brand-500\/30 { background-color: rgba(122,61,255,0.18) !important; }
+  [data-theme="light"] .bg-brand-500\/20 { background-color: rgba(122,61,255,0.14) !important; }
+  [data-theme="light"] .bg-brand-500\/15 { background-color: rgba(122,61,255,0.1) !important; }
+  [data-theme="light"] .text-brand-300 { color: #5617c7 !important; }
+  [data-theme="light"] .text-brand-100 { color: #4613a0 !important; }
+
+  /* Theme toggle button */
+  .theme-toggle .sun { display: none; }
+  .theme-toggle .moon { display: block; }
+  [data-theme="light"] .theme-toggle .sun { display: block; }
+  [data-theme="light"] .theme-toggle .moon { display: none; }
+
+  /* ============================
+     LIGHT MODE — ajustes de verde
+     (accent-lime é fluorescente demais em fundo claro)
+     ============================ */
+  [data-theme="light"] .text-accent-lime { color: #15803d !important; }
+  [data-theme="light"] .bg-accent-lime { background-color: #15803d !important; }
+  [data-theme="light"] .bg-accent-lime\/10 { background-color: rgba(21,128,61,0.1) !important; }
+  [data-theme="light"] .bg-accent-lime\/25 { background-color: rgba(21,128,61,0.2) !important; }
+  [data-theme="light"] .border-accent-lime\/25 { border-color: rgba(21,128,61,0.25) !important; }
+  [data-theme="light"] .border-accent-lime\/40 { border-color: rgba(21,128,61,0.45) !important; }
+
+  /* Gradientes que usam accent-lime → versão escura legível */
+  [data-theme="light"] .from-accent-lime {
+    --tw-gradient-from: #22c55e !important;
+    --tw-gradient-to: rgba(34,197,94,0) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+  [data-theme="light"] .to-accent-green { --tw-gradient-to: #15803d !important; }
+
+  /* Toast verde em light mode — borda e fundo com mais contraste */
+  [data-theme="light"] .from-accent-green\/25 {
+    --tw-gradient-from: rgba(21,128,61,0.15) !important;
+    --tw-gradient-to: rgba(21,128,61,0) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+  [data-theme="light"] .border-accent-green\/40 { border-color: rgba(21,128,61,0.4) !important; }
+
+  /* Botão "Adicionado" (btn-success) — tom mais rico e legível no light */
+  [data-theme="light"] .btn-success {
+    background: linear-gradient(180deg, #22c55e 0%, #15803d 100%) !important;
+    border: 1px solid rgba(21,128,61,0.35) !important;
+    box-shadow: 0 4px 14px -4px rgba(21,128,61,0.5), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+    color: #fff !important;
+  }
+
+  /* Badge "Viralizando" — mais contraste */
+  [data-theme="light"] .badge-viral {
+    background: rgba(21,128,61,0.12) !important;
+    color: #0f5c2d !important;
+    border-color: rgba(21,128,61,0.4) !important;
+  }
+
+  /* Pulse verde (AO VIVO, RADAR ATIVO) — tom mais saturado */
+  [data-theme="light"] .pulse-dot { background: #16a34a !important; }
+  [data-theme="light"] .pulse-dot::before { background: rgba(22,163,74,0.35) !important; }
+
+  /* ============================
+     LIGHT MODE — Painel de Filtros
+     (chips/botões usavam rgba(255,255,255,X) sem override → invisíveis no claro)
+     ============================ */
+  [data-theme="light"] #filterPanel {
+    background: linear-gradient(180deg, #f6f5fb 0%, #efedf7 100%) !important;
+    border-color: rgba(26,26,46,0.07) !important;
+  }
+
+  [data-theme="light"] #filterPanel label {
+    background-color: rgba(26,26,46,0.04) !important;
+    border-color: rgba(26,26,46,0.12) !important;
+  }
+  [data-theme="light"] #filterPanel label:hover {
+    background-color: rgba(26,26,46,0.07) !important;
+  }
+  [data-theme="light"] #filterPanel label:has(:checked) {
+    background-color: rgba(122,61,255,0.12) !important;
+    border-color: rgba(122,61,255,0.4) !important;
+  }
+  [data-theme="light"] #filterPanel label:has(:checked) span {
+    color: #4613a0 !important;
+  }
+
+  [data-theme="light"] .sort-field-chip {
+    background: rgba(26,26,46,0.04);
+    border-color: rgba(26,26,46,0.12);
+    color: rgba(26,26,46,0.7);
+  }
+  [data-theme="light"] .sort-field-chip:hover {
+    background: rgba(26,26,46,0.08);
+    color: #1a1a2e;
+  }
+  [data-theme="light"] .sort-field-chip.active {
+    background: rgba(122,61,255,0.14);
+    border-color: rgba(122,61,255,0.4);
+    color: #4613a0;
+  }
+
+  [data-theme="light"] .sort-option {
+    background: rgba(26,26,46,0.04);
+    border-color: rgba(26,26,46,0.1);
+    color: rgba(26,26,46,0.75);
+  }
+  [data-theme="light"] .sort-option:hover {
+    background: rgba(26,26,46,0.07);
+    color: #1a1a2e;
+  }
+  [data-theme="light"] .sort-option.active {
+    background: rgba(122,61,255,0.12);
+    border-color: rgba(122,61,255,0.4);
+    color: #4613a0;
+  }
+
+  [data-theme="light"] #qfSortDirection {
+    background-color: rgba(26,26,46,0.04) !important;
+    border-color: rgba(26,26,46,0.1) !important;
+  }
+  [data-theme="light"] .sort-dir-btn { color: rgba(26,26,46,0.55); }
+  [data-theme="light"] .sort-dir-btn:hover { color: #1a1a2e; }
+  [data-theme="light"] .sort-dir-btn.active {
+    background: rgba(122,61,255,0.15);
+    color: #4613a0;
+    box-shadow: 0 2px 6px rgba(122,61,255,0.18);
+  }
+
+  [data-theme="light"] .panel-tab { color: rgba(26,26,46,0.6); }
+  [data-theme="light"] .panel-tab:hover {
+    color: #1a1a2e;
+    background: rgba(26,26,46,0.05);
+  }
+  [data-theme="light"] .panel-tab.active {
+    color: #4613a0;
+    background: rgba(122,61,255,0.14);
+    border-color: rgba(122,61,255,0.4);
+  }
+
+  /* Slider track no light — sem o "cinza-azulado" do default do navegador */
+  [data-theme="light"] #filterPanel input[type="range"] {
+    background: transparent;
+  }
+
+  /* ============================
+     MOBILE OPTIMIZATIONS
+     ============================ */
+  #sidebar { background: #07070c; }
+  [data-theme="light"] #sidebar { background: #f4f3fa; }
+  @media (min-width: 1024px) {
+    #sidebar, [data-theme="light"] #sidebar { background: transparent; }
+  }
+  #sidebar.sidebar-open { transform: translateX(0) !important; }
+
+  /* Mobile: travar scroll do body quando drawer aberto */
+  @media (max-width: 1023px) {
+    body.drawer-open { overflow: hidden; }
+  }
+
+  /* Artist mobile card */
+  .artist-card {
+    background: linear-gradient(180deg, rgba(29,29,48,0.55) 0%, rgba(16,16,28,0.55) 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  [data-theme="light"] .artist-card {
+    background: #ffffff;
+    border-color: rgba(26,26,46,0.07);
+  }
+
+  /* Reduzir padding vertical do header em mobile */
+  @media (max-width: 640px) {
+    #toastContainer { bottom: 12px !important; right: 12px !important; left: 12px !important; }
+    #toastContainer > div { max-width: none; }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- LAYOUT -->
+<div class="flex min-h-screen">
+
+  <!-- MOBILE BACKDROP -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden" onclick="closeMobileMenu()"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed lg:sticky inset-y-0 left-0 z-40 w-[280px] lg:w-[260px] shrink-0 flex flex-col border-r border-white/5 px-5 py-6 h-screen transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-y-auto">
+    <div class="flex items-center gap-3 mb-10">
+      <div class="relative">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-800 flex items-center justify-center shadow-glow">
+          <svg viewBox="0 0 24 24" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+          </svg>
+        </div>
+        <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-accent-lime ring-2 ring-ink-900"></span>
+      </div>
+      <div>
+        <div class="font-display font-bold text-white tracking-tight leading-none">Olheiro</div>
+        <div class="font-display font-bold grad-text tracking-tight leading-none">Digital</div>
+      </div>
+    </div>
+
+    <nav class="flex flex-col gap-1 text-sm">
+      <a data-tab="radar" onclick="switchTab('radar'); return false;" href="#" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/60 cursor-pointer">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
+        <span class="font-medium">Radar Semanal</span>
+        <span id="count-radar" class="ml-auto text-[10px] font-bold bg-brand-500/25 text-brand-200 px-2 py-0.5 rounded-full">42</span>
+      </a>
+      <a data-tab="saved" onclick="switchTab('saved'); return false;" href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/60 cursor-pointer">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z"/></svg>
+        <span class="font-medium">Salvos / Favoritos</span>
+        <span id="count-saved" class="ml-auto text-[10px] font-bold bg-white/5 text-white/70 px-2 py-0.5 rounded-full hidden">0</span>
+      </a>
+      <a data-tab="contacted" onclick="switchTab('contacted'); return false;" href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/60 cursor-pointer">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span class="font-medium">Contatados</span>
+        <span id="count-contacted" class="ml-auto text-[10px] font-bold bg-white/5 text-white/70 px-2 py-0.5 rounded-full">0</span>
+      </a>
+      <a data-tab="filters" onclick="switchTab('filters'); return false;" href="#" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/60 cursor-pointer">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        <span class="font-medium">Config. de Filtros</span>
+      </a>
+    </nav>
+
+    <div class="mt-auto">
+      <div class="glass rounded-2xl p-4 relative overflow-hidden">
+        <div class="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-brand-500/30 blur-2xl"></div>
+        <div class="flex items-center gap-2 text-xs text-accent-lime font-semibold mb-2">
+          <span class="pulse-dot"></span> RADAR ATIVO
+        </div>
+        <p class="text-xs text-white/60 leading-relaxed mb-3">Prospecção automática diária às <strong class="text-white">08:00</strong> (horário de Brasília).</p>
+        <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+          <div id="scanProgress" class="h-full w-[0%] bg-gradient-to-r from-brand-500 to-accent-lime rounded-full transition-all duration-700"></div>
+        </div>
+        <div id="nextScanLabel" class="text-[10px] text-white/40 mt-2 font-medium">Próximo scan em —</div>
+      </div>
+
+      <div class="flex items-center gap-3 mt-5 p-2 rounded-xl hover:bg-white/5 cursor-pointer">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-accent-pink to-brand-600 flex items-center justify-center text-xs font-bold text-white">ZS</div>
+        <div class="leading-tight">
+          <div class="text-sm font-semibold text-white">Z Studios</div>
+          <div class="text-[11px] text-white/50">Plano Label Pro</div>
+        </div>
+        <svg class="w-4 h-4 text-white/40 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 min-w-0">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-30 backdrop-blur-xl bg-ink-950/70 border-b border-white/5">
+      <div class="px-4 md:px-6 lg:px-10 py-3 md:py-5 flex items-center gap-3 md:gap-6">
+        <button id="menuToggle" aria-label="Abrir menu" onclick="openMobileMenu()" class="lg:hidden w-10 h-10 rounded-xl border border-white/5 bg-ink-800/70 hover:bg-ink-700 flex items-center justify-center text-white/70 shrink-0">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+
+        <div class="min-w-0">
+          <div id="headerDate" class="text-[10px] md:text-[11px] uppercase tracking-[0.18em] text-white/40 font-semibold">—</div>
+          <h1 class="font-display text-lg md:text-2xl font-bold text-white truncate">
+            <span class="grad-text">Z Studios</span> Board
+          </h1>
+        </div>
+
+        <div class="hidden md:flex flex-1 max-w-xl mx-auto">
+          <div class="w-full relative">
+            <svg class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" placeholder="Busque por artista, gênero ou plataforma..."
+              class="w-full bg-ink-800/70 border border-white/5 rounded-xl pl-11 pr-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-brand-500/60 focus:ring-1 focus:ring-brand-500/40 transition"/>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/40 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 font-mono">⌘K</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 md:gap-3 ml-auto">
+          <button id="themeToggle" aria-label="Alternar tema" class="theme-toggle w-10 h-10 rounded-xl border border-white/5 bg-ink-800/70 hover:bg-ink-700 transition flex items-center justify-center text-white/70 shrink-0">
+            <svg class="moon w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+            <svg class="sun w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          </button>
+
+          <div class="relative hidden sm:block">
+            <button id="notifBtn" aria-label="Notificações" onclick="toggleNotifPanel(event)" class="relative w-10 h-10 rounded-xl border border-white/5 bg-ink-800/70 hover:bg-ink-700 transition flex items-center justify-center text-white/70 shrink-0">
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0"/></svg>
+              <span id="notifBadge" class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-accent-pink rounded-full text-[10px] font-bold flex items-center justify-center text-white">0</span>
+            </button>
+
+            <div id="notifPanel" class="hidden absolute right-0 top-full mt-2 w-[340px] glass rounded-2xl shadow-card z-50 overflow-hidden">
+              <div class="flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/5">
+                <div class="flex items-center gap-2">
+                  <span class="pulse-dot"></span>
+                  <h3 class="font-display font-bold text-white text-sm">Notificações</h3>
+                </div>
+                <button onclick="markAllNotifsRead(event)" class="text-[11px] text-white/50 hover:text-white">Marcar lidas</button>
+              </div>
+              <div class="max-h-[70vh] overflow-y-auto">
+                <div class="px-4 pt-3 pb-2 flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg bg-accent-lime/15 border border-accent-lime/25 flex items-center justify-center">
+                    <svg class="w-3 h-3 text-accent-lime" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 3L4 14h7l-1 8 9-11h-7z"/></svg>
+                  </div>
+                  <div class="text-[10px] uppercase tracking-wider text-white/50 font-bold">Em alta — fique de olho</div>
+                </div>
+                <div id="notifHotList" class="px-2 pb-2"></div>
+
+                <div class="px-4 pt-3 pb-2 flex items-center gap-2 border-t border-white/5 mt-1">
+                  <div class="w-6 h-6 rounded-lg bg-brand-500/20 border border-brand-500/30 flex items-center justify-center">
+                    <svg class="w-3 h-3 text-brand-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><path d="M4 6l8 7 8-7"/></svg>
+                  </div>
+                  <div class="text-[10px] uppercase tracking-wider text-white/50 font-bold">Contatados recentemente</div>
+                </div>
+                <div id="notifContactedList" class="px-2 pb-3"></div>
+              </div>
+              <div class="px-4 py-3 border-t border-white/5 bg-ink-850/40">
+                <button onclick="switchTab('contacted'); closeNotifPanel();" class="text-xs text-brand-300 hover:text-brand-200 font-semibold w-full text-center">Ver todos os contatados →</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="hidden md:flex items-center gap-1.5 text-[11px] text-accent-lime font-semibold px-2.5 py-1.5 rounded-lg bg-accent-lime/10 border border-accent-lime/25" title="Prospecção automática roda todos os dias às 08:00 (horário de Brasília)">
+            <span class="pulse-dot"></span>
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span>Auto · 08h diário</span>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <input id="scrapeQuery" type="text" placeholder="funk 150, rap drill, trap..." maxlength="80" class="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-400 focus:bg-white/10 transition w-36 sm:w-52" title="Busca livre no TikTok e YouTube via Apify" />
+            <button id="refreshBtn" aria-label="Prospectar artistas" class="btn-primary rounded-xl px-3 sm:px-4 py-2.5 text-sm font-semibold text-white flex items-center gap-2 shrink-0">
+              <svg id="refreshIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg>
+              <span id="refreshText" class="hidden sm:inline">Prospectar Artistas</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="px-4 md:px-6 lg:px-10 py-6 md:py-8 space-y-6 md:space-y-8">
+
+      <!-- ===================== VIEW: RADAR ===================== -->
+      <div data-view="radar" class="space-y-8">
+      <!-- KPIs -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Card 1 -->
+        <div class="glass glass-hover kpi-shine rounded-2xl p-5 relative">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-1">Artistas no Radar</div>
+              <div class="flex items-baseline gap-2 mt-2">
+                <span id="kpiTotalArtists" class="font-display text-4xl font-bold text-white">—</span>
+                <span id="kpiNewDelta" class="text-xs text-accent-lime font-semibold flex items-center gap-1 hidden">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 8h-5v8h-6v-8H4z"/></svg>
+                  <span id="kpiNewDeltaValue">—</span>
+                </span>
+              </div>
+              <div id="kpiNewDeltaLabel" class="text-[11px] text-white/40 mt-1">monitorados na base agora</div>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center">
+              <svg class="w-5 h-5 text-brand-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            </div>
+          </div>
+          <!-- mini sparkline -->
+          <svg viewBox="0 0 120 32" class="mt-4 w-full h-8">
+            <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7a3dff" stop-opacity=".6"/><stop offset="1" stop-color="#7a3dff" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 24 L15 20 L30 22 L45 14 L60 16 L75 10 L90 12 L105 6 L120 8 L120 32 L0 32 Z" fill="url(#g1)"/>
+            <path d="M0 24 L15 20 L30 22 L45 14 L60 16 L75 10 L90 12 L105 6 L120 8" fill="none" stroke="#b794ff" stroke-width="1.6"/>
+          </svg>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="glass glass-hover kpi-shine rounded-2xl p-5 relative">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-1">Taxa Média de Engajamento</div>
+              <div class="flex items-baseline gap-2 mt-2">
+                <span class="font-display text-4xl font-bold text-white"><span id="kpiAvgEngagement">—</span><span class="text-2xl text-white/60">%</span></span>
+                <span id="kpiEngTrend" class="text-xs font-semibold flex items-center gap-1 hidden">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 8h-5v8h-6v-8H4z"/></svg>
+                  <span id="kpiEngTrendValue">—</span>
+                </span>
+              </div>
+              <div class="text-[11px] text-white/40 mt-1">média do radar atual</div>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-accent-lime/10 border border-accent-lime/25 flex items-center justify-center">
+              <svg class="w-5 h-5 text-accent-lime" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1a5.5 5.5 0 10-7.8 7.8l1 1L12 21l7.8-7.5 1-1a5.5 5.5 0 000-7.8z"/></svg>
+            </div>
+          </div>
+          <svg viewBox="0 0 120 32" class="mt-4 w-full h-8">
+            <defs><linearGradient id="g2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#c6ff3d" stop-opacity=".45"/><stop offset="1" stop-color="#c6ff3d" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 22 L15 18 L30 20 L45 12 L60 16 L75 8 L90 14 L105 6 L120 10 L120 32 L0 32 Z" fill="url(#g2)"/>
+            <path d="M0 22 L15 18 L30 20 L45 12 L60 16 L75 8 L90 14 L105 6 L120 10" fill="none" stroke="#c6ff3d" stroke-width="1.6"/>
+          </svg>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="glass glass-hover kpi-shine rounded-2xl p-5 relative">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-1">Artistas em Alta</div>
+              <div class="flex items-baseline gap-2 mt-2">
+                <span id="kpiHotCount" class="font-display text-4xl font-bold text-white">—</span>
+                <span class="text-xs text-accent-pink font-semibold flex items-center gap-1">
+                  🔥 hot now
+                </span>
+              </div>
+              <div class="text-[11px] text-white/40 mt-1">viralizando ou com engajamento ≥ 17%</div>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-accent-pink/10 border border-accent-pink/25 flex items-center justify-center">
+              <svg class="w-5 h-5 text-accent-pink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 3L4 14h7l-1 8 9-11h-7z"/></svg>
+            </div>
+          </div>
+          <div id="kpiHotAvatars" class="flex -space-x-2 mt-4 min-h-[28px]"></div>
+        </div>
+      </section>
+
+      <!-- RADAR TABLE -->
+      <section class="glass rounded-2xl radar-section">
+        <div class="flex flex-wrap items-center gap-4 p-5 border-b border-white/5">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="font-display text-lg font-bold text-white">Radar de Talentos</h2>
+              <span class="badge badge-viral"><span class="pulse-dot"></span> AO VIVO</span>
+            </div>
+            <p class="text-xs text-white/50 mt-0.5">Artistas independentes detectados pelo algoritmo de tendências — Semana 17</p>
+          </div>
+
+          <div class="ml-auto flex items-center gap-2 text-xs">
+            <button id="btnFilters" type="button" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 font-medium flex items-center gap-2 border border-white/5">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              Filtros
+              <span id="filterBadge" class="hidden text-[10px] bg-brand-500/30 text-brand-100 px-1.5 rounded">0</span>
+            </button>
+            <button id="btnSort" type="button" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 font-medium flex items-center gap-2 border border-white/5">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M6 12h12M10 17h4"/></svg>
+              <span id="sortLabel">Ordenar</span>
+            </button>
+            <button id="btnExport" type="button" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 font-medium flex items-center gap-2 border border-white/5">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M5 12l7 7 7-7M5 21h14"/></svg>
+              Exportar
+            </button>
+          </div>
+        </div>
+
+        <!-- ===================== INLINE FILTER PANEL (simplificado) ===================== -->
+        <div id="filterPanel" class="hidden border-b border-white/5 bg-black/10 p-5 space-y-5">
+          <div class="flex items-center justify-between pb-1">
+            <div class="text-sm font-semibold text-white">Filtros &amp; Ordenação</div>
+            <div class="flex items-center gap-2">
+              <span id="filterMatchSummary" class="text-[11px] text-white/50"></span>
+              <button id="btnClosePanel" type="button" class="w-7 h-7 rounded-lg hover:bg-white/5 text-white/60 hover:text-white flex items-center justify-center" title="Fechar">✕</button>
+            </div>
+          </div>
+
+          <!-- Plataforma -->
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-white/50 font-semibold mb-2">Plataforma</div>
+            <div id="qfPlatform" class="flex gap-2 flex-wrap">
+              <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 has-[:checked]:bg-brand-500/20 has-[:checked]:border-brand-500/40">
+                <input type="checkbox" value="tiktok" class="accent-brand-500 w-3 h-3"/>
+                <span class="text-xs text-white/80">TikTok</span>
+              </label>
+              <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 has-[:checked]:bg-brand-500/20 has-[:checked]:border-brand-500/40">
+                <input type="checkbox" value="youtube" class="accent-brand-500 w-3 h-3"/>
+                <span class="text-xs text-white/80">YouTube</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Gêneros -->
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-white/50 font-semibold mb-2">Gêneros</div>
+            <div id="qfGenres" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- Status -->
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-white/50 font-semibold mb-2">Status</div>
+            <div id="qfStatus" class="flex gap-2 flex-wrap">
+              <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 has-[:checked]:bg-brand-500/20 has-[:checked]:border-brand-500/40">
+                <input type="checkbox" value="Viralizando" class="accent-brand-500 w-3 h-3"/>
+                <span class="text-xs text-white/80">🚀 Viralizando</span>
+              </label>
+              <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 has-[:checked]:bg-brand-500/20 has-[:checked]:border-brand-500/40">
+                <input type="checkbox" value="Em Alta" class="accent-brand-500 w-3 h-3"/>
+                <span class="text-xs text-white/80">🔥 Em Alta</span>
+              </label>
+              <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 has-[:checked]:bg-brand-500/20 has-[:checked]:border-brand-500/40">
+                <input type="checkbox" value="Estável" class="accent-brand-500 w-3 h-3"/>
+                <span class="text-xs text-white/80">◎ Estável</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Sliders -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-white/50 font-semibold mb-2">
+                <span>Seguidores mínimos</span>
+                <span id="qfFollowersValue" class="text-white normal-case tracking-normal font-bold">0</span>
+              </div>
+              <input id="qfFollowers" type="range" min="0" max="80000" step="1000" value="0" class="w-full accent-brand-500"/>
+              <div class="flex justify-between text-[10px] text-white/40 mt-1"><span>0</span><span>80k+</span></div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-white/50 font-semibold mb-2">
+                <span>Engajamento mínimo</span>
+                <span id="qfEngagementValue" class="text-white normal-case tracking-normal font-bold">0%</span>
+              </div>
+              <input id="qfEngagement" type="range" min="0" max="22" value="0" class="w-full accent-brand-500"/>
+              <div class="flex justify-between text-[10px] text-white/40 mt-1"><span>0%</span><span>22%</span></div>
+            </div>
+          </div>
+
+          <!-- Ordenar por + direção -->
+          <div class="pt-4 border-t border-white/5">
+            <div class="text-[10px] uppercase tracking-wider text-white/50 font-semibold mb-2">Ordenar por</div>
+            <div class="flex flex-wrap items-center gap-2">
+              <div id="qfSortField" class="flex flex-wrap gap-2"></div>
+              <div id="qfSortDirection" class="ml-auto flex items-center gap-1 rounded-lg bg-white/5 border border-white/10 p-0.5">
+                <button type="button" data-dir="asc"  class="sort-dir-btn active px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                  Crescente
+                </button>
+                <button type="button" data-dir="desc" class="sort-dir-btn px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                  Decrescente
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ações -->
+          <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-white/5">
+            <button id="btnApply" type="button" class="btn-primary rounded-lg px-4 py-2 text-xs font-semibold text-white flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12l4 4L19 7"/></svg>
+              Aplicar
+            </button>
+            <button id="btnClear" type="button" class="rounded-lg px-4 py-2 text-xs font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5">
+              Limpar tudo
+            </button>
+          </div>
+        </div>
+
+        <!-- Table (desktop/tablet) -->
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-[11px] uppercase tracking-wider text-white/40 font-semibold bg-ink-850/40">
+                <th class="text-left py-3 px-5 font-semibold">Artista</th>
+                <th class="text-left py-3 px-3 font-semibold">Plataforma</th>
+                <th class="text-left py-3 px-3 font-semibold">Gênero</th>
+                <th class="text-left py-3 px-3 font-semibold">Seguidores</th>
+                <th class="text-left py-3 px-3 font-semibold">Engajamento</th>
+                <th class="text-left py-3 px-3 font-semibold">Status</th>
+                <th class="text-right py-3 px-5 font-semibold">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="artistsTableBody" class="divide-y divide-white/5"></tbody>
+          </table>
+        </div>
+
+        <!-- Cards (mobile) -->
+        <div id="artistsMobileList" class="md:hidden p-3 space-y-3"></div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 p-3 md:p-4 border-t border-white/5 text-xs text-white/50">
+          <div id="paginationInfo" class="w-full sm:w-auto text-center sm:text-left">Exibindo artistas...</div>
+          <div id="paginationControls" class="flex items-center gap-1 mx-auto sm:mx-0"></div>
+        </div>
+      </section>
+      </div><!-- /view radar -->
+
+      <!-- ===================== VIEW: SAVED / FAVORITOS ===================== -->
+      <div data-view="saved" class="space-y-8 hidden">
+        <section class="glass rounded-2xl p-5 flex flex-wrap items-center gap-4">
+          <div class="w-11 h-11 rounded-xl bg-accent-pink/10 border border-accent-pink/25 flex items-center justify-center">
+            <svg class="w-5 h-5 text-accent-pink" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-7-10a4 4 0 017-2.6A4 4 0 0119 11c0 5.65-7 10-7 10z"/></svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="font-display text-lg font-bold text-white">Salvos / Favoritos</h2>
+              <span id="savedHeaderBadge" class="badge badge-stable">0 salvos</span>
+            </div>
+            <p class="text-xs text-white/50 mt-0.5">Artistas que você marcou como favoritos ficam guardados aqui para revisão posterior.</p>
+          </div>
+        </section>
+
+        <section class="glass rounded-2xl overflow-hidden">
+          <div id="savedGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-5"></div>
+          <div id="savedEmpty" class="hidden p-10 text-center">
+            <div class="mx-auto w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+              <svg class="w-6 h-6 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z"/></svg>
+            </div>
+            <div class="text-white font-semibold mb-1">Nenhum artista salvo ainda</div>
+            <p class="text-sm text-white/50 max-w-sm mx-auto">Volte para o <button onclick="switchTab('radar')" class="text-brand-300 hover:underline font-medium">Radar Semanal</button> e clique no ícone de estrela ao lado de qualquer artista para favoritá-lo.</p>
+          </div>
+        </section>
+      </div><!-- /view saved -->
+
+      <!-- ===================== VIEW: CONTATADOS ===================== -->
+      <div data-view="contacted" class="space-y-8 hidden">
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="glass glass-hover rounded-2xl p-5">
+            <div class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-1">Contatados no total</div>
+            <div class="flex items-baseline gap-2 mt-2">
+              <span id="statContactedTotal" class="font-display text-4xl font-bold text-white">0</span>
+              <span class="text-xs text-white/40">artistas</span>
+            </div>
+            <div class="text-[11px] text-white/40 mt-1">e-mails disparados via Outreach Engine</div>
+          </div>
+          <div class="glass glass-hover rounded-2xl p-5">
+            <div class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-1">Taxa de abertura simulada</div>
+            <div class="flex items-baseline gap-2 mt-2">
+              <span id="statOpenRate" class="font-display text-4xl font-bold text-white">—</span>
+            </div>
+            <div class="text-[11px] text-white/40 mt-1">estimada sobre os disparos atuais</div>
+          </div>
+          <div class="glass glass-hover rounded-2xl p-5">
+            <div class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-1">Em follow-up</div>
+            <div class="flex items-baseline gap-2 mt-2">
+              <span id="statFollowup" class="font-display text-4xl font-bold text-white">0</span>
+              <span class="text-xs text-accent-pink font-semibold">aguardando resposta</span>
+            </div>
+            <div class="text-[11px] text-white/40 mt-1">próximo follow-up automático em 48h</div>
+          </div>
+        </section>
+
+        <section class="glass rounded-2xl overflow-hidden">
+          <div class="flex flex-wrap items-center gap-4 p-5 border-b border-white/5">
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="font-display text-lg font-bold text-white">Artistas contatados</h2>
+                <span class="badge badge-viral"><span class="pulse-dot"></span> Outreach ativo</span>
+              </div>
+              <p class="text-xs text-white/50 mt-0.5">Histórico dos artistas adicionados ao CRM e que receberam e-mail de prospecção.</p>
+            </div>
+          </div>
+          <div id="contactedList" class="divide-y divide-white/5"></div>
+          <div id="contactedEmpty" class="hidden p-10 text-center">
+            <div class="mx-auto w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+              <svg class="w-6 h-6 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <div class="text-white font-semibold mb-1">Nenhum artista contatado ainda</div>
+            <p class="text-sm text-white/50 max-w-sm mx-auto">Vá até o <button onclick="switchTab('radar')" class="text-brand-300 hover:underline font-medium">Radar Semanal</button> e clique em "Adicionar ao CRM" para disparar o primeiro e-mail.</p>
+          </div>
+        </section>
+      </div><!-- /view contacted -->
+
+      <!-- ===================== VIEW: FILTROS ===================== -->
+      <div data-view="filters" class="space-y-8 hidden">
+        <section class="glass rounded-2xl p-6">
+          <div class="flex items-start gap-4 mb-6">
+            <div class="w-11 h-11 rounded-xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center">
+              <svg class="w-5 h-5 text-brand-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+            </div>
+            <div>
+              <h2 class="font-display text-lg font-bold text-white">Configuração de Filtros</h2>
+              <p class="text-xs text-white/50 mt-0.5">Defina os critérios que o algoritmo usa para escanear artistas e alimentar o Radar Semanal.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Plataformas -->
+            <div>
+              <label class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-3 block">Plataformas monitoradas</label>
+              <div class="flex flex-wrap gap-2" id="filterPlatforms">
+                <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
+                  <input type="checkbox" value="tiktok" checked class="accent-brand-500"/>
+                  <span class="text-sm text-white/80">TikTok</span>
+                </label>
+                <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
+                  <input type="checkbox" value="youtube" checked class="accent-brand-500"/>
+                  <span class="text-sm text-white/80">YouTube</span>
+                </label>
+                <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition opacity-60">
+                  <input type="checkbox" value="instagram" class="accent-brand-500"/>
+                  <span class="text-sm text-white/80">Instagram <span class="text-[10px] text-white/40">(em breve)</span></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <label class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-3 block">Incluir artistas com status</label>
+              <div class="flex flex-wrap gap-2" id="filterStatus">
+                <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
+                  <input type="checkbox" value="Viralizando" checked class="accent-brand-500"/>
+                  <span class="text-sm text-white/80">🚀 Viralizando</span>
+                </label>
+                <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
+                  <input type="checkbox" value="Em Alta" checked class="accent-brand-500"/>
+                  <span class="text-sm text-white/80">🔥 Em Alta</span>
+                </label>
+                <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
+                  <input type="checkbox" value="Estável" checked class="accent-brand-500"/>
+                  <span class="text-sm text-white/80">◎ Estável</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Engajamento mínimo -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-xs uppercase tracking-wider text-white/50 font-semibold">Engajamento mínimo</label>
+                <span id="filterEngagementValue" class="text-sm text-brand-300 font-semibold">5%</span>
+              </div>
+              <input id="filterEngagement" type="range" min="0" max="25" value="5" class="w-full accent-brand-500"/>
+              <div class="flex justify-between text-[11px] text-white/40 mt-1"><span>0%</span><span>25%</span></div>
+            </div>
+
+            <!-- Seguidores mínimo -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-xs uppercase tracking-wider text-white/50 font-semibold">Mínimo de seguidores</label>
+                <span id="filterFollowersValue" class="text-sm text-brand-300 font-semibold">1.000</span>
+              </div>
+              <input id="filterFollowers" type="range" min="0" max="100000" step="1000" value="1000" class="w-full accent-brand-500"/>
+              <div class="flex justify-between text-[11px] text-white/40 mt-1"><span>0</span><span>100k+</span></div>
+            </div>
+
+            <!-- Gêneros -->
+            <div class="lg:col-span-2">
+              <label class="text-xs uppercase tracking-wider text-white/50 font-semibold mb-3 block">Gêneros de interesse</label>
+              <div class="flex flex-wrap gap-2" id="filterGenres"></div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 mt-7 pt-6 border-t border-white/5">
+            <button onclick="saveFilters()" class="btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold text-white flex items-center gap-2">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4L19 7"/></svg>
+              Salvar configuração
+            </button>
+            <button onclick="resetFilters()" class="rounded-xl px-5 py-2.5 text-sm font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5">
+              Restaurar padrão
+            </button>
+            <div class="ml-auto text-xs text-white/40" id="filterMatchInfo">— artistas correspondem aos filtros atuais</div>
+          </div>
+        </section>
+      </div><!-- /view filters -->
+
+      <footer class="flex flex-wrap items-center justify-between gap-3 pt-4 pb-8 text-xs text-white/40">
+        <div>© 2026 Olheiro Digital — Powered by Z Studios Intelligence</div>
+        <div class="flex items-center gap-4">
+          <span>Versão 2.4.1</span>
+          <span class="flex items-center gap-1.5"><span class="pulse-dot"></span> Todos os sistemas operacionais</span>
+        </div>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<!-- Toast container -->
+<div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end pointer-events-none"></div>
+
+<!-- Email preview modal -->
+<div id="emailModal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 modal-backdrop">
+  <div class="glass rounded-2xl max-w-2xl w-full shadow-glow ring-brand flex flex-col max-h-[92vh]">
+    <!-- Header (fixo) -->
+    <div class="flex items-start gap-3 p-5 sm:p-6 pb-4 border-b border-white/5 shrink-0">
+      <div class="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-brand-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v12H4z"/><path d="M4 6l8 7 8-7"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="font-display font-bold text-white text-base sm:text-lg">E-mail de prospecção enviado</h3>
+          <span class="badge badge-viral"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.42z"/></svg> entregue</span>
+        </div>
+        <p class="text-xs text-white/50 mt-0.5">Disparo automatizado via Z Studios Outreach Engine</p>
+      </div>
+      <button onclick="closeEmailModal()" class="text-white/40 hover:text-white text-2xl leading-none shrink-0">×</button>
+    </div>
+
+    <!-- Corpo (rola internamente) -->
+    <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-4">
+      <div class="email-preview p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/40 border-b border-white/5 pb-2 mb-3">
+          <span>De: <span class="text-white/80 font-medium">prospeccao@zstudios.com.br</span></span>
+          <span id="emailTimestamp"></span>
+        </div>
+        <div class="text-[12px] text-white/60 mb-2">Para: <span id="emailTo" class="text-brand-300 font-medium break-all"></span></div>
+        <div class="text-sm font-semibold text-white mb-3" id="emailSubject"></div>
+        <div class="text-sm text-white/75 leading-relaxed space-y-2" id="emailBody"></div>
+      </div>
+    </div>
+
+    <!-- Footer (fixo) -->
+    <div class="flex items-center gap-2 p-5 sm:p-6 pt-4 border-t border-white/5 shrink-0">
+      <button onclick="closeEmailModal()" class="btn-primary rounded-xl px-4 py-2 text-sm font-semibold text-white flex-1">Entendido</button>
+      <button onclick="closeEmailModal()" class="rounded-xl px-4 py-2 text-sm font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCRAPE PROCESS MODAL ============ -->
+<div id="scrapeModal" class="fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 modal-backdrop">
+  <div class="glass rounded-2xl max-w-2xl w-full shadow-glow ring-brand flex flex-col max-h-[92vh]">
+    <!-- Header -->
+    <div class="p-5 sm:p-6 pb-4 border-b border-white/5 shrink-0">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center shrink-0">
+          <svg id="scrapeHeaderIcon" class="w-5 h-5 text-brand-300 spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 id="scrapeTitle" class="font-display font-bold text-white text-base sm:text-lg">Prospectando talentos</h3>
+            <span id="scrapeLiveBadge" class="badge badge-viral"><span class="pulse-dot"></span> AO VIVO</span>
+          </div>
+          <p id="scrapeSubtitle" class="text-xs text-white/50 mt-0.5">O motor de prospecção está varrendo as redes e analisando perfis em tempo real.</p>
+        </div>
+        <button onclick="closeScrapeModal()" class="text-white/40 hover:text-white text-2xl leading-none shrink-0" title="Fechar (continua rodando em segundo plano)">×</button>
+      </div>
+
+      <!-- Progress bar + timer -->
+      <div class="mt-4 flex items-center gap-3">
+        <div class="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+          <div id="scrapeProgressBar" class="h-full bg-gradient-to-r from-brand-500 to-accent-lime rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="text-[11px] text-white/50 font-mono font-semibold tabular-nums min-w-[60px] text-right"><span id="scrapeElapsed">00:00</span></div>
+      </div>
+    </div>
+
+    <!-- Steps list (rola) -->
+    <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-4">
+      <div id="scrapeStepsList" class="space-y-1.5"></div>
+
+      <!-- Resultado final (escondido até terminar) -->
+      <div id="scrapeResult" class="hidden mt-5 pt-5 border-t border-white/5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-11 h-11 rounded-xl bg-accent-lime/15 border border-accent-lime/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-accent-lime" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <div class="font-display text-2xl font-bold text-white"><span id="scrapeResultCount">0</span> <span class="text-white/70 text-base font-medium">novos talentos descobertos</span></div>
+            <div class="text-[11px] text-white/50 mt-0.5">adicionados ao Radar e priorizados por engajamento</div>
+          </div>
+        </div>
+        <div id="scrapeResultList" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex items-center gap-2 p-5 sm:p-6 pt-4 border-t border-white/5 shrink-0">
+      <button id="scrapeModalDoneBtn" onclick="closeScrapeModal()" disabled class="btn-primary rounded-xl px-4 py-2 text-sm font-semibold text-white flex-1 opacity-50 cursor-not-allowed">Aguarde a prospecção terminar...</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Olheiro Digital — Scripts
+   ========================= */
+
+// Artists are loaded from the backend API (persisted to a JSON file on the server).
+let artists = [];
+
+function applyAvatarGradients() {
+  artists.forEach((a, i) => { a.grad = 'avatar-gradient-' + ((i % 5) + 1); });
+}
+
+/* Quebra-gelos personalizados — simulam análise de Instagram por artista */
+const ICEBREAKERS = {
+  1:  'aquele seu reel de funk que passou dos 400 mil views na semana passada ficou comigo por dias. A transição para a base do refrão é impecável — voltei algumas vezes só para ouvir de novo.',
+  2:  'vi o registro de bastidores da sua última residência num clube e é possível sentir a entrega que você traz para a pista. É raro ver DJ em formação com essa noção de construção de set ao vivo.',
+  3:  'houve uma cena marcante: eu estava no trânsito quando seu último reel no batidão carioca apareceu no meu feed, e parei tudo que estava fazendo. A forma como você encaixa o flow sobre aquela batida é exatamente o que o Rio precisava.',
+  4:  'coloquei seu último beat no fone e fiquei em loop. Os samples que você seleciona estão num patamar que 90% dos beatmakers brasileiros não vai alcançar este ano.',
+  5:  'acompanhei sua última live do baile, do início ao fim. A energia que o público deixa nos comentários conta toda a história — você está construindo algo especial no funk.',
+  6:  'aquele reel da sua parceria com MCs da sua área não é improviso, é arquitetura sonora. A troca de flows foi muito bem construída — poucos artistas independentes pensam o som dessa maneira.',
+  7:  'volto toda semana no seu último freestyle postado. A forma como sua rima sustenta a intensidade até o verso final é característica de quem veio para permanecer — não é elogio gratuito.',
+  8:  'seu último drop está em rotação constante aqui. A construção melódica sobre o trap está te colocando em um lugar muito específico do cenário — poucos artistas no Brasil estão ousando assim.',
+  9:  'aquele freestyle que você gravou no metrô não viralizou por acaso. Improvisar rimando em tempo real dessa maneira é talento de nascença — a técnica se aperfeiçoa, mas isso já vem de dentro.',
+  10: 'mesmo na captação de celular, o peso dos graves do seu último vídeo de set ao vivo ficou marcante. Isso revela uma coisa: sua mão de mix na pista está consolidada, não é estúdio maquiando o som.',
+  11: 'seu feed inteiro chama atenção — a paleta, o styling, a coerência visual entre posts. Parece trabalho de direção de arte profissional, não de artista se virando sozinha. Quem pensa esses visuais com você?',
+  12: 'seu set do pôr do sol virou trilha sonora da minha semana. A curadoria musical que você faz está em um patamar acima do que se vê no feed dos DJs brasileiros — percebe-se que você escolhe música com cuidado.',
+  13: 'a troca de flows de vocês dois no último single foi de tirar o fôlego. É aquele tipo de entrosamento que não se ensaia — cresceram juntos, e vocês trouxeram isso para a rima de um jeito que emociona.',
+  14: 'sua estrofe no último cypher gravado foi de arrepiar, do começo ao fim. A entrega no verso final é algo raro de se capturar em áudio ao vivo — você tem peso de MC experiente.',
+  15: 'seu flow no último drill carrega uma assinatura reconhecível já nos primeiros compassos. Assinatura sonora própria, na sua idade, é rara — isso é ouro bruto para quem sabe o que faz.',
+  16: 'a produção crua dos seus últimos singles tem um charme propositalmente sujo que combina perfeitamente com a proposta do rap underground — e ainda há respaldo técnico para conquistar um público maior. Escolha muito inteligente.',
+  17: 'seu reel dançando com o DJ na quadra me deu vontade de estar no próximo baile. Os comentários não deixam dúvida: o público abraçou com alma. É raro hoje.',
+  18: 'a escolha de manter o beat minimalista no seu último single foi corajosa, e acertou em cheio. Sua entrega calculada precisa desse espaço — poucos produtores teriam sensibilidade para tomar essa decisão.',
+  19: 'seus sets autorais já apresentam transições de quem pensa o set como obra, não como playlist. Essa maturidade artística, para a altura da sua carreira, é algo que mexe com quem ouve com atenção.',
+  20: 'seu último drop no funk paulista está com uma cadência que o cenário de SP precisava — e o público está respondendo. A forma como você encaixa o flow sobre aquela batida seca paulista é para poucos. Tipo de MC que vira referência.',
+  21: 'a estética urbana dos seus visuais dialoga com sua entrega no trap de um jeito que confere identidade clara ao projeto. Muitos artistas levam anos para encontrar essa voz — você já a encontrou.',
+  22: 'seu feed inteiro é um exercício de world-building. A estética retrô synthwave, dos visuais aos artworks, tem uma coerência que não se vê em lugar nenhum no cenário brasileiro hoje. Você construiu um universo próprio.',
+  23: 'suas rimas no último cypher em alta mostram que seu flow funciona em qualquer formato que o algoritmo favorecer. Versatilidade assim é moeda rara — MC com essa elasticidade tem valor real.',
+  24: 'aquela atmosfera onírica que você constrói com o autotune bem dosado tem assinatura sonora própria — ouvi três segundos e já soube que era você. Isso levou Travis Scott uma carreira inteira para desenvolver.',
+  25: 'os drops do seu último cypher ao vivo emocionaram até nos comentários. A entrega coletiva da crew só artistas com raiz de cena conseguem captar — sente-se a presença mesmo do outro lado da tela.',
+  26: 'a forma como você traz a estética low-rider americana com alma brasileira em seus reels de trap é única. É um nicho que praticamente ninguém mais preenche hoje, e isso é um ativo raro.',
+  27: 'o storytelling que você desenvolve nas letras, combinado com o visual P&B dos clipes, funciona como obra única — é cinema em formato de música. Poucos conseguem unir as duas dimensões assim.',
+  28: 'os sets na praia que você posta têm uma energia comunitária que marcas grandes gastam muito dinheiro tentando replicar e não conseguem. Autenticidade na pista não se compra.',
+  29: 'seu storytelling e a métrica densa das suas últimas faixas me surpreenderam. Essa maturidade, para a altura da sua carreira, é do tipo que faz label sério prestar atenção.',
+  30: 'a coreografia do seu último reel encaixou com a batida do funk paulista de um jeito que o algoritmo premiou imediatamente — já está viralizando em outras contas. Você leu a onda antes dela chegar.',
+  31: 'os cyphers que vocês postam nos encontros de fim de semana têm rimas autorais que mereceriam virar EP oficial. Há conteúdo de sobra ali para um lançamento formal.',
+  32: 'suas rimas afiadas sobre sororidade estão abrindo espaço para o rap feminino brasileiro de uma maneira que movimenta toda a cena. É maior do que música — é movimento cultural.',
+  33: 'as montagens com graves marcantes do seu último pack já estão tocando nos lugares que importam. Dá para perceber pelo tipo de página que está repostando — você chegou ao ecossistema certo.',
+  34: 'a voz rasgada que você imprime no trap confere um peso que diferencia suas faixas das outras do nicho. É timbre, não técnica — e timbre não se treina, ou se tem ou não.',
+  35: 'o som alienígena e o visual cyberpunk que você vem construindo são raridade absoluta no trap experimental brasileiro. Você está praticamente sozinho nesse espaço — é vantagem competitiva real.',
+  36: 'a atmosfera e as sessões dub que você compartilha trazem uma eletrônica verdadeira e atemporal. É exatamente o tipo de projeto que label sério abraça com carinho.',
+  37: 'seus vídeos na quebrada com o DJ ao vivo estão resgatando o funk raiz de um jeito que o público jovem está respondendo. Isso é raríssimo, e está acontecendo por causa da sua pegada.',
+  38: 'o batidão do Rio, com os lemas da favela, que você imprime em seus reels carrega um DNA que só quem vive ali consegue traduzir. Autenticidade assim não se fabrica em estúdio — você vive o que canta.',
+  39: 'a entrega intimista das suas rimas nos últimos vídeos cria uma atmosfera impossível de engenheirar em estúdio. É diferencial artístico de verdade.',
+  40: 'os covers dos clássicos do rap nacional, com direção de clipe caprichada, que vocês postam respeitam o legado sem soar datado. É um equilíbrio delicado, e vocês acertam de um jeito que os veteranos aprovariam.',
+  41: 'a mistura de rimas clássicas com produção moderna nos seus últimos lançamentos mostra uma maturidade artística pouco comum para a sua faixa. Há gente com o triplo da sua carreira que ainda não chegou lá.',
+  42: 'a fusão de tropicália com batida de baile nos seus últimos sets tem uma identidade que já tem selo próprio. Ninguém mais soa assim — e isso, no DJing brasileiro, é moeda rara.'
+};
+
+/* Pool de fallback — usado nos artistas gerados automaticamente pelo scraper.
+   Observações humanas, emocionais, sobre momentos públicos que o próprio artista
+   postou no Instagram. Tudo coisa visível em perfil aberto — nada invasivo. */
+const FALLBACK_ICEBREAKERS = [
+  'aquele seu vídeo rindo com a galera depois do show me marcou. É raro ver artista independente carregando uma alegria tão genuína após anos de correria — é o tipo de coisa que se perde no caminho, e você não perdeu.',
+  'assisti ao vídeo em que você comemorava a nova marca de seguidores — voltei duas vezes. Há uma humildade no seu sorriso que diz muito sobre de onde você veio e para onde está indo.',
+  'reparei em um detalhe: você responde os comentários dos fãs com atenção real, não com um agradecimento padrão de copiar-e-colar. Lê cada um. É o tipo de cuidado que se perde quando o artista cresce, e você ainda mantém.',
+  'seu último reel agradecendo quem está com você desde o começo me marcou. A forma como fala dos primeiros ouvintes, sem parecer ensaiada, demonstra uma lealdade difícil de encontrar hoje.',
+  'aquele vídeo em que você fala do seu processo, um pouco nervosa, sem filtro, foi o que mais me marcou em todo o seu perfil. Quem se permite ser humano assim em vídeo, hoje em dia, tem algo que não se ensina.',
+  'me marcou seu reel comemorando uma meta pequena com a mesma alegria de quem já conquistou tudo. Artistas que ainda vibram assim com as pequenas vitórias do caminho vão longe.',
+  'aquele reel em que você abraça a crew após atingir uma marca nova — sem pose, sem photo-op, genuíno — me fez sorrir aqui do outro lado. É vibe que não se fabrica.',
+  'reparei que você promove outros artistas em seus stories, sem ciúme, sem competir. Isso fala muito sobre o ser humano por trás da música — e esse tipo de atitude atrai o mesmo tipo de pessoa para a sua órbita.',
+  'há um reel em que você fala sobre uma fase mais difícil que atravessou — e a coragem de postar aquilo, sabendo que todos iriam ver, me impressionou. Vulnerabilidade bem dosada cria vínculo de fã para a vida inteira.',
+  'a forma como você interage com os fãs nos comentários demonstra que você está ouvindo de volta — não apenas falando para o alto. É algo que se percebe mesmo de fora.',
+  'me marcou um reel em que você agradece um fã que enviou um desenho. Parar para responder a isso, em 2026, já diz muito — e a forma como você respondeu diz ainda mais.',
+  'há uma autenticidade no jeito como você grava reel sem produção, olhando apenas para a câmera, que o faz parecer alguém real, não "artista posando". É a moeda mais rara do mercado hoje.',
+  'reparei que você sempre cita quem o ajudou no caminho — produtor, DJ, amigo que filmou. Esse reconhecimento público, que poucos fazem, diz muito sobre o tipo de carreira que você está construindo.',
+  'seu último reel rindo de um erro na hora de gravar, sem editar, sem esconder, foi o que mais me marcou. Quem consegue rir de si mesmo tem um carisma que a câmera captura de verdade.',
+  'aquele reel em que você compartilha a história de como tudo começou, com emoção genuína no olhar, é o tipo de conteúdo que faz o ouvinte virar torcedor. É raro ver alguém contar a própria história assim.'
+];
+
+function pickFallbackIcebreaker(id) {
+  const i = Math.abs(Number(id) || 0) % FALLBACK_ICEBREAKERS.length;
+  return FALLBACK_ICEBREAKERS[i];
+}
+
+async function loadArtists() {
+  const res = await fetch('/api/artists');
+  const data = await res.json();
+  artists = data.artists || [];
+  applyAvatarGradients();
+  // hydrate CRM state from server
+  addedArtists.clear();
+  contactLog.clear();
+  artists.forEach(a => {
+    if (a.crmAdded) {
+      addedArtists.add(a.id);
+      contactLog.set(a.id, {
+        date: a.crmAddedAt ? new Date(a.crmAddedAt) : new Date(),
+        opened: Math.random() > 0.35
+      });
+    }
+  });
+}
+
+const PER_PAGE = 8;
+let currentPage = 1;
+
+/* ==== Filtered + sorted view ==== */
+function getDisplayedArtists() {
+  const list = artists.filter(a => matchesFilters(a, activeFilters));
+  return list.slice().sort(getSortComparator());
+}
+function getTotalPages() { return Math.max(1, Math.ceil(getDisplayedArtists().length / PER_PAGE)); }
+
+const platformIcon = (p) => {
+  if (p === 'tiktok') {
+    return `<span class="inline-flex items-center gap-2 text-white/80">
+      <span class="tiktok-chip w-7 h-7 rounded-lg bg-[#111] border border-white/10 flex items-center justify-center">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="#fff"><path d="M19.6 6.8a6 6 0 01-3.6-1.2V15a5.5 5.5 0 11-5.5-5.5c.3 0 .6 0 .9.1v2.8a2.7 2.7 0 102 2.6V2h2.7a6 6 0 003.5 3.3v1.5z"/></svg>
+      </span>
+      <span class="text-xs font-semibold">TikTok</span>
+    </span>`;
+  }
+  return `<span class="inline-flex items-center gap-2 text-white/80">
+    <span class="w-7 h-7 rounded-lg bg-[#ff0000]/15 border border-[#ff0000]/25 flex items-center justify-center">
+      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="#ff3c3c"><path d="M23 7.2s-.2-1.6-.9-2.3c-.8-.9-1.8-.9-2.2-1C16.7 3.5 12 3.5 12 3.5s-4.7 0-7.9.4c-.4.1-1.4.1-2.2 1C1.2 5.6 1 7.2 1 7.2S.8 9.1.8 11v1.9c0 1.9.2 3.8.2 3.8s.2 1.6.9 2.3c.8.9 1.9.9 2.4 1 1.7.2 7.7.3 7.7.3s4.7 0 7.9-.4c.4-.1 1.4-.1 2.2-1 .7-.7.9-2.3.9-2.3s.2-1.9.2-3.8V11c0-1.9-.2-3.8-.2-3.8zM9.8 14.8V8.5l6.1 3.2-6.1 3.1z"/></svg>
+    </span>
+    <span class="text-xs font-semibold">YouTube</span>
+  </span>`;
+};
+
+const statusBadge = (s) => {
+  if (s === 'Viralizando') return `<span class="badge badge-viral">🚀 ${s}</span>`;
+  if (s === 'Em Alta')     return `<span class="badge badge-hot">🔥 ${s}</span>`;
+  return `<span class="badge badge-stable">◎ ${s}</span>`;
+};
+
+const engagementPill = (v) => {
+  const color = v >= 15 ? 'text-accent-lime' : v >= 10 ? 'text-brand-300' : 'text-white/70';
+  const bar = v >= 15 ? 'from-accent-lime to-accent-green' : v >= 10 ? 'from-brand-400 to-brand-600' : 'from-white/30 to-white/10';
+  return `
+    <div class="flex flex-col gap-1 min-w-[90px]">
+      <div class="flex items-center gap-1.5">
+        <span class="${color} font-bold text-sm">${v}%</span>
+      </div>
+      <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+        <div class="h-full bg-gradient-to-r ${bar}" style="width:${Math.min(v*4.5, 100)}%"></div>
+      </div>
+    </div>`;
+};
+
+function renderArtists() {
+  const tbody = document.getElementById('artistsTableBody');
+  const displayed = getDisplayedArtists();
+  const totalPages = Math.max(1, Math.ceil(displayed.length / PER_PAGE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PER_PAGE;
+  const end = start + PER_PAGE;
+  const pageData = displayed.slice(start, end);
+
+  const mobileList = document.getElementById('artistsMobileList');
+
+  if (displayed.length === 0) {
+    tbody.innerHTML = `
+      <tr><td colspan="7" class="py-12 text-center">
+        <div class="text-white/60 text-sm mb-2">Nenhum artista corresponde aos filtros atuais.</div>
+        <button onclick="clearQuickFilters(); applyQuickFilters();" class="text-xs text-brand-300 hover:text-brand-200 underline">Limpar filtros</button>
+      </td></tr>`;
+    if (mobileList) mobileList.innerHTML = `
+      <div class="text-center py-10">
+        <div class="text-white/60 text-sm mb-2">Nenhum artista corresponde aos filtros atuais.</div>
+        <button onclick="clearQuickFilters(); applyQuickFilters();" class="text-xs text-brand-300 hover:text-brand-200 underline">Limpar filtros</button>
+      </div>`;
+    renderPagination(displayed.length);
+    return;
+  }
+
+  tbody.innerHTML = pageData.map(a => {
+    const added = addedArtists.has(a.id);
+    const btnClass = added ? 'btn-success' : 'btn-primary';
+    const btnContent = added
+      ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l4 4L19 7"/></svg> Adicionado`
+      : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg> Adicionar ao CRM`;
+    return `
+    <tr class="row-hover transition-colors">
+      <td class="py-4 px-5">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <div class="${a.grad} w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>
+            ${a.status === 'Viralizando' ? '<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-pink text-[9px] flex items-center justify-center">🔥</span>':''}
+          </div>
+          <div class="leading-tight">
+            <div class="font-semibold text-white">${a.name}</div>
+            <div class="text-[11px] text-white/45">${a.handle}</div>
+          </div>
+        </div>
+      </td>
+      <td class="py-4 px-3">${platformIcon(a.platform)}</td>
+      <td class="py-4 px-3">
+        <span class="inline-block px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-[11px] font-medium text-white/80">${a.genre}</span>
+      </td>
+      <td class="py-4 px-3">
+        <div class="text-white font-semibold">${a.followers}</div>
+        <div class="text-[11px] text-white/40">seguidores</div>
+      </td>
+      <td class="py-4 px-3">${engagementPill(a.engagement)}</td>
+      <td class="py-4 px-3">${statusBadge(a.status)}</td>
+      <td class="py-4 px-5 text-right">
+        <div class="inline-flex items-center gap-2">
+          <button
+            onclick="toggleSave(${a.id}, this)"
+            title="${savedArtists.has(a.id) ? 'Remover dos favoritos' : 'Salvar nos favoritos'}"
+            class="w-8 h-8 rounded-lg border border-white/10 ${savedArtists.has(a.id) ? 'bg-accent-pink/15 text-accent-pink' : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'} flex items-center justify-center transition">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="${savedArtists.has(a.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+          </button>
+          <button
+            id="crm-btn-${a.id}"
+            onclick="addToCrm(${a.id}, this)"
+            ${added ? 'disabled' : ''}
+            class="${btnClass} rounded-lg px-3.5 py-2 text-xs font-semibold text-white inline-flex items-center gap-1.5">
+            ${btnContent}
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Cards version for mobile
+  if (mobileList) {
+    mobileList.innerHTML = pageData.map(a => {
+      const added = addedArtists.has(a.id);
+      const saved = savedArtists.has(a.id);
+      const btnClass = added ? 'btn-success' : 'btn-primary';
+      const btnContent = added
+        ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l4 4L19 7"/></svg> Adicionado`
+        : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg> Adicionar ao CRM`;
+      return `
+        <div class="artist-card">
+          <div class="flex items-start gap-3">
+            <div class="relative shrink-0">
+              <div class="${a.grad} w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>
+              ${a.status === 'Viralizando' ? '<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-pink text-[9px] flex items-center justify-center">🔥</span>':''}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold text-white truncate">${a.name}</div>
+              <div class="text-[11px] text-white/45 truncate">${a.handle}</div>
+              <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                ${statusBadge(a.status)}
+                <span class="inline-block px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] font-medium text-white/70">${a.genre}</span>
+              </div>
+            </div>
+            <button
+              onclick="toggleSave(${a.id}, this)"
+              aria-label="${saved ? 'Remover dos favoritos' : 'Salvar nos favoritos'}"
+              class="w-9 h-9 rounded-lg border border-white/10 ${saved ? 'bg-accent-pink/15 text-accent-pink' : 'bg-white/5 text-white/60'} flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="${saved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/5 text-center">
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Plataforma</div>
+              <div class="mt-1 flex items-center justify-center">${platformIcon(a.platform)}</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Seguidores</div>
+              <div class="text-sm text-white font-semibold mt-1">${a.followers}</div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Engaj.</div>
+              <div class="text-sm mt-1 font-semibold ${a.engagement >= 15 ? 'text-accent-lime' : a.engagement >= 10 ? 'text-brand-300' : 'text-white/70'}">${a.engagement}%</div>
+            </div>
+          </div>
+
+          <button
+            id="crm-btn-m-${a.id}"
+            onclick="addToCrm(${a.id}, this)"
+            ${added ? 'disabled' : ''}
+            class="${btnClass} w-full mt-3 rounded-lg px-3 py-2.5 text-xs font-semibold text-white inline-flex items-center justify-center gap-1.5">
+            ${btnContent}
+          </button>
+        </div>`;
+    }).join('');
+  }
+
+  renderPagination(displayed.length);
+}
+
+function renderPagination(totalFiltered) {
+  const info = document.getElementById('paginationInfo');
+  const controls = document.getElementById('paginationControls');
+  const total = (typeof totalFiltered === 'number') ? totalFiltered : getDisplayedArtists().length;
+  const start = total === 0 ? 0 : (currentPage - 1) * PER_PAGE + 1;
+  const end = Math.min(currentPage * PER_PAGE, total);
+  const suffix = total !== artists.length ? ` <span class="text-white/40">(filtrado de ${artists.length})</span>` : '';
+  info.innerHTML = `Exibindo <span class="text-white font-semibold">${start}–${end}</span> de <span class="text-white font-semibold">${total}</span> artistas descobertos${suffix}`;
+
+  const totalPages = getTotalPages();
+  let html = '';
+  html += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed">‹</button>`;
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === currentPage) {
+      html += `<button class="w-8 h-8 rounded-lg bg-brand-500/25 text-white font-semibold border border-brand-500/40">${p}</button>`;
+    } else {
+      html += `<button onclick="goToPage(${p})" class="w-8 h-8 rounded-lg hover:bg-white/5">${p}</button>`;
+    }
+  }
+  html += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed">›</button>`;
+  controls.innerHTML = html;
+}
+
+function goToPage(p) {
+  if (p < 1 || p > getTotalPages()) return;
+  currentPage = p;
+  renderArtists();
+  document.querySelector('#artistsTableBody').closest('section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ==== Toast ==== */
+function toast({ title, message, variant = 'success', icon = '✅', timeout = 4000 }) {
+  const container = document.getElementById('toastContainer');
+  const colors = {
+    success: 'from-accent-green/25 to-ink-800 border-accent-green/40',
+    info:    'from-brand-500/25 to-ink-800 border-brand-500/40',
+    mail:    'from-brand-500/20 to-ink-800 border-brand-400/40',
+  };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto max-w-sm rounded-2xl border bg-gradient-to-br ${colors[variant] || colors.info} backdrop-blur-xl p-4 shadow-card flex items-start gap-3 toast-enter`;
+  el.innerHTML = `
+    <div class="text-xl leading-none">${icon}</div>
+    <div class="flex-1 min-w-0">
+      <div class="text-sm font-semibold text-white">${title}</div>
+      ${message ? `<div class="text-xs text-white/70 mt-0.5 leading-relaxed">${message}</div>` : ''}
+    </div>
+    <button class="text-white/40 hover:text-white text-sm leading-none">×</button>
+  `;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('toast-enter-active'));
+  const close = () => {
+    el.classList.add('toast-exit-active');
+    setTimeout(() => el.remove(), 320);
+  };
+  el.querySelector('button').addEventListener('click', close);
+  setTimeout(close, timeout);
+}
+
+/* ==== Refresh button — chama o scraper no servidor ==== */
+/* ==== Scrape Process Modal ==== */
+const SCRAPE_STAGES = [
+  { icon: '🔐', label: 'Autenticando nas APIs',          detail: 'TikTok · YouTube · Instagram · tokens OAuth renovados', dur: 420  },
+  { icon: '📡', label: 'Conectando à base de monitoramento', detail: '12.483 perfis sob vigilância ativa',                  dur: 680  },
+  { icon: '🎧', label: 'Varrendo perfis no TikTok',       detail: '4.812 perfis ativos · últimos 30 dias',                  dur: 2400 },
+  { icon: '#',  label: 'Rastreando hashtags virais',      detail: '#funk150 · #trapnacional · #raprj · #eletronicabr',      dur: 1350 },
+  { icon: '📊', label: 'Coletando métricas de alcance',   detail: 'views, saves, shares e repostagens em reels',            dur: 820  },
+  { icon: '▶️', label: 'Conectando ao YouTube Data API',  detail: 'endpoint v3 · key autenticada',                          dur: 540  },
+  { icon: '🎬', label: 'Analisando canais independentes', detail: '2.371 canais de música não-selados',                     dur: 2200 },
+  { icon: '📈', label: 'Calculando curva de crescimento', detail: 'comparando últimos 14 dias vs. base histórica',          dur: 950  },
+  { icon: '🔍', label: 'Filtrando duplicatas e bots',     detail: 'heurística de autenticidade + cross-check por CPF musical', dur: 760  },
+  { icon: '🤖', label: 'Classificando por IA por gênero', detail: 'modelo treinado em rap, funk e eletrônica brasileiros',  dur: 1280 },
+  { icon: '🎯', label: 'Detectando picos de engajamento', detail: 'outliers estatísticos sobre o nicho',                    dur: 840  },
+  { icon: '⭐', label: 'Priorizando por score do Radar',  detail: 'cruzando engajamento × seguidores × crescimento',        dur: 420  },
+  { icon: '💾', label: 'Salvando no banco do Radar',      detail: 'persistência no JSON · commit do batch',                 dur: 520  }
+];
+
+let scrapeTimerInterval;
+let scrapeStageTimers = [];
+
+function openScrapeModal(query) {
+  const modal = document.getElementById('scrapeModal');
+  const list = document.getElementById('scrapeStepsList');
+  // Reset UI
+  document.getElementById('scrapeTitle').textContent = 'Prospectando talentos';
+  document.getElementById('scrapeSubtitle').textContent = query
+    ? `Buscando "${query}" no TikTok e no YouTube via Apify — isso pode levar 1–3 min.`
+    : 'O motor de prospecção está varrendo as redes e analisando perfis em tempo real.';
+  document.getElementById('scrapeLiveBadge').classList.remove('hidden');
+  document.getElementById('scrapeHeaderIcon').classList.add('spin');
+  document.getElementById('scrapeProgressBar').style.width = '0%';
+  document.getElementById('scrapeElapsed').textContent = '00:00';
+  document.getElementById('scrapeResult').classList.add('hidden');
+  document.getElementById('scrapeResultList').innerHTML = '';
+  const doneBtn = document.getElementById('scrapeModalDoneBtn');
+  doneBtn.disabled = true;
+  doneBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  doneBtn.textContent = 'Aguarde a prospecção terminar...';
+
+  list.innerHTML = SCRAPE_STAGES.map((s, i) => `
+    <div id="scrapeStep-${i}" class="flex items-start gap-3 px-3 py-2.5 rounded-xl border border-transparent transition-all" data-state="pending">
+      <div class="scrape-status shrink-0 w-6 h-6 rounded-full border-2 border-white/15 flex items-center justify-center mt-0.5">
+        <span class="text-[10px] text-white/40">${i + 1}</span>
+      </div>
+      <div class="text-xl shrink-0 opacity-40 transition-opacity">${s.icon}</div>
+      <div class="flex-1 min-w-0">
+        <div class="scrape-label text-sm font-medium text-white/50 transition-colors">${s.label}</div>
+        <div class="scrape-detail text-[11px] text-white/30 mt-0.5 hidden">${s.detail}</div>
+      </div>
+    </div>
+  `).join('');
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  // Timer de tempo decorrido
+  const startedAt = Date.now();
+  scrapeTimerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - startedAt) / 1000);
+    const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+    const ss = String(sec % 60).padStart(2, '0');
+    document.getElementById('scrapeElapsed').textContent = `${mm}:${ss}`;
+  }, 250);
+}
+
+function markStageRunning(i) {
+  const el = document.getElementById('scrapeStep-' + i);
+  if (!el) return;
+  el.dataset.state = 'running';
+  el.classList.remove('border-transparent');
+  el.classList.add('border-brand-500/30', 'bg-brand-500/5');
+  el.querySelector('.scrape-status').innerHTML = '<span class="w-3 h-3 rounded-full bg-accent-lime animate-pulse"></span>';
+  el.querySelector('.scrape-status').classList.add('border-accent-lime/50');
+  el.querySelector('.text-xl').classList.remove('opacity-40');
+  el.querySelector('.scrape-label').classList.remove('text-white/50');
+  el.querySelector('.scrape-label').classList.add('text-white', 'font-semibold');
+  el.querySelector('.scrape-detail').classList.remove('hidden');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function markStageDone(i) {
+  const el = document.getElementById('scrapeStep-' + i);
+  if (!el) return;
+  el.dataset.state = 'done';
+  el.classList.remove('border-brand-500/30', 'bg-brand-500/5');
+  el.classList.add('border-transparent');
+  el.querySelector('.scrape-status').innerHTML = '<svg class="w-3.5 h-3.5 text-accent-lime" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l4 4L19 7"/></svg>';
+  el.querySelector('.scrape-status').classList.remove('border-white/15');
+  el.querySelector('.scrape-status').classList.add('border-accent-lime/60', 'bg-accent-lime/10');
+  el.querySelector('.scrape-label').classList.remove('text-white', 'font-semibold');
+  el.querySelector('.scrape-label').classList.add('text-white/70');
+  const pct = Math.round(((i + 1) / SCRAPE_STAGES.length) * 100);
+  document.getElementById('scrapeProgressBar').style.width = pct + '%';
+}
+
+function showScrapeResult(newArtists) {
+  const result = document.getElementById('scrapeResult');
+  document.getElementById('scrapeResultCount').textContent = newArtists.length;
+  const list = document.getElementById('scrapeResultList');
+  list.innerHTML = newArtists.slice(0, 6).map(a => {
+    const grad = a.grad || 'avatar-gradient-1';
+    return `
+    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/10">
+      <div class="${grad} w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0">${a.avatar || '??'}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-semibold text-white truncate">${a.name}</div>
+        <div class="text-[11px] text-white/50 truncate">${a.genre} · ${a.followers} seguidores · ${a.engagement}% engaj.</div>
+      </div>
+      ${statusBadge(a.status)}
+    </div>`;
+  }).join('') + (newArtists.length > 6 ? `<div class="text-[11px] text-white/40 text-center pt-1">+ ${newArtists.length - 6} outros no Radar</div>` : '');
+  result.classList.remove('hidden');
+  // UI final
+  document.getElementById('scrapeTitle').textContent = 'Prospecção concluída';
+  document.getElementById('scrapeSubtitle').textContent = 'Todos os novos talentos foram salvos e já aparecem no Radar.';
+  document.getElementById('scrapeLiveBadge').classList.add('hidden');
+  document.getElementById('scrapeHeaderIcon').classList.remove('spin');
+  document.getElementById('scrapeHeaderIcon').outerHTML = '<svg id="scrapeHeaderIcon" class="w-5 h-5 text-accent-lime" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l4 4L19 7"/></svg>';
+  document.getElementById('scrapeProgressBar').style.width = '100%';
+  const doneBtn = document.getElementById('scrapeModalDoneBtn');
+  doneBtn.disabled = false;
+  doneBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  doneBtn.textContent = 'Ver no Radar';
+}
+
+function closeScrapeModal() {
+  const modal = document.getElementById('scrapeModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  clearInterval(scrapeTimerInterval);
+  scrapeStageTimers.forEach(t => clearTimeout(t));
+  scrapeStageTimers = [];
+}
+
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('refreshBtn');
+  const icon = document.getElementById('refreshIcon');
+  const text = document.getElementById('refreshText');
+  const queryInput = document.getElementById('scrapeQuery');
+  const query = (queryInput.value || '').trim();
+  if (!query) {
+    queryInput.focus();
+    queryInput.classList.add('border-red-400/60');
+    setTimeout(() => queryInput.classList.remove('border-red-400/60'), 1500);
+    toast({
+      title: 'Digite o que buscar',
+      message: 'Ex: "funk 150", "rap drill brasil", "trap melódico".',
+      variant: 'info',
+      icon: '🔎',
+      timeout: 3500
+    });
+    return;
+  }
+  btn.disabled = true;
+  btn.classList.add('opacity-80');
+  icon.classList.add('spin');
+  text.textContent = 'Prospectando...';
+
+  openScrapeModal(query);
+
+  // Agenda os estágios — cada um marca o anterior como done e o atual como running
+  let elapsed = 0;
+  SCRAPE_STAGES.forEach((stage, i) => {
+    const startAt = elapsed;
+    scrapeStageTimers.push(setTimeout(() => {
+      if (i > 0) markStageDone(i - 1);
+      markStageRunning(i);
+    }, startAt));
+    elapsed += stage.dur;
+  });
+
+  try {
+    const res = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query })
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || 'scrape failed');
+    }
+    const data = await res.json();
+    artists = data.artists || [];
+    applyAvatarGradients();
+
+    // Marca o último estágio como done
+    markStageDone(SCRAPE_STAGES.length - 1);
+
+    // Aplica gradiente aos novos artistas pra mostrar com cor bonita
+    const newArtists = (data.newArtists || []).map((a, idx) => ({
+      ...a,
+      grad: 'avatar-gradient-' + (((artists.findIndex(x => x.id === a.id)) % 5) + 1)
+    }));
+
+    setTimeout(() => {
+      showScrapeResult(newArtists);
+      clearInterval(scrapeTimerInterval);
+    }, 300);
+
+    renderArtists();
+    updateKpis();
+    updateCounters();
+    const countEl = document.getElementById('count-radar');
+    if (countEl) countEl.textContent = artists.length;
+    if (typeof buildGenreChips === 'function') buildGenreChips();
+    if (typeof updateFilterMatchCount === 'function') updateFilterMatchCount();
+
+    toast({
+      title: `${newArtists.length} ${newArtists.length === 1 ? 'novo artista descoberto' : 'novos artistas descobertos'}`,
+      message: `Adicionados ao Radar e prontos para prospecção.`,
+      variant: 'success',
+      icon: '🛰️',
+      timeout: 4500
+    });
+  } catch (err) {
+    console.error(err);
+    clearInterval(scrapeTimerInterval);
+    scrapeStageTimers.forEach(t => clearTimeout(t));
+    closeScrapeModal();
+    toast({
+      title: 'Falha ao sincronizar',
+      message: 'Não foi possível contatar o servidor. Tente novamente.',
+      variant: 'info',
+      icon: '⚠️'
+    });
+  } finally {
+    icon.classList.remove('spin');
+    text.textContent = 'Prospectar Artistas';
+    btn.classList.remove('opacity-80');
+    btn.disabled = false;
+  }
+});
+
+/* ==== Add to CRM + fake email ==== */
+const addedArtists = new Set();
+const savedArtists = new Set();
+const contactLog = new Map(); // id -> { date, openedAt }
+
+function addToCrm(id, btn) {
+  if (addedArtists.has(id)) return;
+  const a = artists.find(x => x.id === id);
+  addedArtists.add(id);
+  contactLog.set(id, { date: new Date(), opened: Math.random() > 0.35 });
+  a.crmAdded = true;
+  updateCounters();
+
+  // Persiste no servidor
+  fetch(`/api/artists/${id}/crm`, { method: 'POST' }).catch(err => console.error('persist crm failed', err));
+
+  // Transform button
+  btn.classList.remove('btn-primary');
+  btn.classList.add('btn-success');
+  btn.disabled = true;
+  btn.innerHTML = `
+    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l4 4L19 7"/></svg>
+    Adicionado
+  `;
+
+  // Toast 1 — CRM
+  toast({
+    title: 'Artista adicionado ao funil de prospecção!',
+    message: `${a.name} está agora na etapa "Primeiro Contato" do seu CRM.`,
+    variant: 'success',
+    icon: '🎯'
+  });
+
+  // Sem e-mail público na bio — só CRM, não dispara template automático
+  if (!a.email) {
+    setTimeout(() => {
+      toast({
+        title: 'Sem e-mail público na bio',
+        message: `${a.name} entrou no CRM, mas o e-mail automático não foi enviado.`,
+        variant: 'info',
+        icon: '📭',
+        timeout: 4500
+      });
+    }, 600);
+    return;
+  }
+
+  // Simulate email send after 600ms
+  setTimeout(() => {
+    toast({
+      title: 'Disparando e-mail automático...',
+      message: `Para: ${a.email}`,
+      variant: 'info',
+      icon: '✉️',
+      timeout: 2200
+    });
+  }, 600);
+
+  setTimeout(() => {
+    toast({
+      title: 'E-mail enviado para ' + a.name,
+      message: 'Template: Convite de sessão — Z Studios',
+      variant: 'mail',
+      icon: '📬',
+      timeout: 5000
+    });
+    showEmailPreview(a);
+    sendRealEmail(a);
+  }, 2200);
+}
+
+/* Dispara o envio real via SMTP quando configurado. Falhas são silenciosas pra não poluir o demo. */
+async function sendRealEmail(a) {
+  const subject = document.getElementById('emailSubject').textContent;
+  const html = document.getElementById('emailBody').innerHTML;
+  try {
+    const res = await fetch(`/api/artists/${a.id}/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, html })
+    });
+    const data = await res.json();
+    if (!data.success) console.warn('[mail] send failed:', data.error);
+  } catch (err) {
+    console.warn('[mail] send error:', err && err.message);
+  }
+}
+
+/* ==== Email modal ==== */
+function showEmailPreview(a) {
+  const modal = document.getElementById('emailModal');
+  const now = new Date();
+  const timeStr = now.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  document.getElementById('emailTimestamp').textContent = timeStr;
+  document.getElementById('emailTo').textContent = `${a.name} <${a.email}>`;
+  document.getElementById('emailSubject').textContent = 'Parceria com a Z Studios';
+  const icebreaker = ICEBREAKERS[a.id] || pickFallbackIcebreaker(a.id);
+  document.getElementById('emailBody').innerHTML = `
+    <div style="display:flex; align-items:center; gap:8px; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#b794ff; font-weight:600; margin-bottom:10px;">
+      <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#c6ff3d;"></span>
+      Quebra-gelo gerado por IA · análise do @${a.handle.replace('@','')} no Instagram
+    </div>
+
+    <p>Olá, <strong>${a.name}</strong>,</p>
+
+    <p>${icebreaker}</p>
+
+    <p>Meu nome é <strong>Felipe Araújo</strong>, sou A&amp;R da <strong>Z Studios</strong>. Estamos finalizando a composição do nosso roster para 2026 e, dentro do recorte de <em>${a.genre}</em>, seu nome entrou em uma lista muito seleta de artistas que nossa equipe acompanhou nas últimas semanas.</p>
+
+    <p>O que gostaríamos de oferecer: uma <strong>sessão completa de gravação e mixagem profissional</strong> em nosso estúdio em São Paulo, por nossa conta; um <strong>produtor especializado em ${a.genre}</strong>, com domínio real da linguagem do seu nicho; e <strong>distribuição digital e estratégia de lançamento</strong> nas nossas redes combinadas (mais de 2 milhões de pessoas). Importante: <strong>você mantém 100% dos direitos da obra</strong>, com contrato simples e sem exclusividade oculta.</p>
+
+    <p>Se a proposta fizer sentido, me responda com uma janela de horário que funcione para você ainda essa semana, e marcamos uma conversa breve de 15 minutos — apenas para nos conhecermos melhor.</p>
+
+    <p style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,.08);">
+      Fico no aguardo,<br/>
+      <strong style="color:#fff">Felipe Araújo</strong><br/>
+      <span style="color:rgba(255,255,255,.5); font-size:12px;">A&amp;R · Z Studios</span><br/>
+      <span style="color:rgba(255,255,255,.4); font-size:11px;">felipe.araujo@zstudios.com.br · wa.me/5511987654321</span>
+    </p>
+  `;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+function closeEmailModal() {
+  const modal = document.getElementById('emailModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+/* ==== Theme Toggle ==== */
+(function initTheme() {
+  const root = document.documentElement;
+  const saved = localStorage.getItem('olheiro-theme');
+  if (saved === 'light' || saved === 'dark') {
+    root.setAttribute('data-theme', saved);
+  }
+  const toggle = document.getElementById('themeToggle');
+  toggle.addEventListener('click', () => {
+    const current = root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('olheiro-theme', next);
+    toast({
+      title: next === 'light' ? 'Modo claro ativado' : 'Modo escuro ativado',
+      message: next === 'light' ? 'Visualização otimizada para ambientes bem iluminados.' : 'De volta ao modo escuro elegante.',
+      variant: 'info',
+      icon: next === 'light' ? '☀️' : '🌙',
+      timeout: 2500
+    });
+  });
+})();
+
+/* ==== Mobile drawer ==== */
+function openMobileMenu() {
+  document.getElementById('sidebar').classList.add('sidebar-open');
+  document.getElementById('sidebarBackdrop').classList.remove('hidden');
+  document.body.classList.add('drawer-open');
+}
+function closeMobileMenu() {
+  document.getElementById('sidebar').classList.remove('sidebar-open');
+  document.getElementById('sidebarBackdrop').classList.add('hidden');
+  document.body.classList.remove('drawer-open');
+}
+
+/* ==== Tab switching ==== */
+function switchTab(tab) {
+  document.querySelectorAll('[data-view]').forEach(el => {
+    el.classList.toggle('hidden', el.dataset.view !== tab);
+  });
+  document.querySelectorAll('[data-tab]').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  if (tab === 'saved')     renderSaved();
+  if (tab === 'contacted') renderContacted();
+  if (tab === 'filters')   updateFilterMatchCount();
+  closeMobileMenu();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ==== Favoritar ==== */
+function toggleSave(id, btn) {
+  const a = artists.find(x => x.id === id);
+  if (savedArtists.has(id)) {
+    savedArtists.delete(id);
+    toast({ title: 'Removido dos favoritos', message: `${a.name} saiu da sua lista de salvos.`, variant: 'info', icon: '☆', timeout: 2200 });
+  } else {
+    savedArtists.add(id);
+    toast({ title: 'Salvo nos favoritos', message: `${a.name} foi adicionado à aba Salvos / Favoritos.`, variant: 'success', icon: '⭐', timeout: 2400 });
+  }
+  updateCounters();
+  renderArtists();
+  if (!document.querySelector('[data-view="saved"]').classList.contains('hidden')) renderSaved();
+}
+
+/* ==== Saved view ==== */
+function renderSaved() {
+  const grid = document.getElementById('savedGrid');
+  const empty = document.getElementById('savedEmpty');
+  const badge = document.getElementById('savedHeaderBadge');
+  const list = artists.filter(a => savedArtists.has(a.id));
+  badge.textContent = `${list.length} ${list.length === 1 ? 'salvo' : 'salvos'}`;
+
+  if (list.length === 0) {
+    grid.innerHTML = '';
+    grid.classList.add('hidden');
+    empty.classList.remove('hidden');
+    return;
+  }
+  grid.classList.remove('hidden');
+  empty.classList.add('hidden');
+
+  grid.innerHTML = list.map(a => `
+    <div class="glass glass-hover rounded-2xl p-4 flex flex-col gap-3">
+      <div class="flex items-start gap-3">
+        <div class="${a.grad} w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg shrink-0">${a.avatar}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-white truncate">${a.name}</div>
+          <div class="text-[11px] text-white/45 truncate">${a.handle}</div>
+          <div class="flex items-center gap-2 mt-1.5">
+            ${statusBadge(a.status)}
+          </div>
+        </div>
+        <button onclick="toggleSave(${a.id}, this)" title="Remover dos favoritos" class="w-8 h-8 rounded-lg bg-accent-pink/15 text-accent-pink border border-accent-pink/25 flex items-center justify-center hover:bg-accent-pink/25 transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+        </button>
+      </div>
+      <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t border-white/5">
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Plataforma</div>
+          <div class="text-xs text-white/80 mt-0.5 capitalize">${a.platform}</div>
+        </div>
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Seguidores</div>
+          <div class="text-xs text-white/80 mt-0.5 font-semibold">${a.followers}</div>
+        </div>
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Engaj.</div>
+          <div class="text-xs ${a.engagement >= 15 ? 'text-accent-lime' : a.engagement >= 10 ? 'text-brand-300' : 'text-white/70'} mt-0.5 font-semibold">${a.engagement}%</div>
+        </div>
+      </div>
+      <div class="text-[11px] text-white/50 truncate">${a.genre}</div>
+      ${addedArtists.has(a.id)
+        ? `<button disabled class="btn-success rounded-lg px-3 py-2 text-xs font-semibold text-white inline-flex items-center justify-center gap-1.5"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l4 4L19 7"/></svg> Já no CRM</button>`
+        : `<button onclick="addToCrm(${a.id}, this)" class="btn-primary rounded-lg px-3 py-2 text-xs font-semibold text-white inline-flex items-center justify-center gap-1.5"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg> Adicionar ao CRM</button>`
+      }
+    </div>
+  `).join('');
+}
+
+/* ==== Contacted view ==== */
+function renderContacted() {
+  const list = document.getElementById('contactedList');
+  const empty = document.getElementById('contactedEmpty');
+  const ids = Array.from(addedArtists);
+  const items = ids.map(id => artists.find(a => a.id === id)).filter(Boolean);
+
+  // Stats
+  document.getElementById('statContactedTotal').textContent = items.length;
+  const opened = items.filter(a => contactLog.get(a.id)?.opened).length;
+  document.getElementById('statOpenRate').textContent = items.length === 0 ? '—' : Math.round((opened / items.length) * 100) + '%';
+  document.getElementById('statFollowup').textContent = items.length - opened;
+
+  if (items.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  list.innerHTML = items.map(a => {
+    const log = contactLog.get(a.id);
+    const dateStr = log ? log.date.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+    const opened = log?.opened;
+    return `
+    <div class="flex flex-wrap items-center gap-4 p-5 row-hover">
+      <div class="${a.grad} w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg shrink-0">${a.avatar}</div>
+      <div class="min-w-0 flex-1">
+        <div class="font-semibold text-white truncate">${a.name}</div>
+        <div class="text-[11px] text-white/45 truncate">${a.email || 'sem e-mail público'}</div>
+      </div>
+      <div class="hidden md:block text-xs text-white/60">
+        <div class="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Contatado em</div>
+        <div>${dateStr}</div>
+      </div>
+      <div class="flex items-center gap-2">
+        ${opened
+          ? '<span class="badge badge-viral">✓ E-mail aberto</span>'
+          : '<span class="badge badge-stable">⏳ Aguardando abertura</span>'}
+        ${statusBadge(a.status)}
+      </div>
+      <button onclick="showEmailPreview(artists.find(x => x.id === ${a.id}))" class="rounded-lg px-3 py-2 text-xs font-semibold text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 inline-flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16v12H4z"/><path d="M4 6l8 7 8-7"/></svg>
+        Ver e-mail
+      </button>
+    </div>`;
+  }).join('');
+}
+
+/* ==== KPI cards (topo do Radar Semanal) ==== */
+function updateKpis() {
+  const total = artists.length;
+
+  // Card 1 — total + delta de "novos esta semana" via scrapedAt
+  const totalEl = document.getElementById('kpiTotalArtists');
+  if (totalEl) totalEl.textContent = total.toLocaleString('pt-BR');
+
+  const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const newThisWeek = artists.filter(a => a.scrapedAt && new Date(a.scrapedAt).getTime() >= weekAgoMs).length;
+  const deltaWrap = document.getElementById('kpiNewDelta');
+  const deltaVal = document.getElementById('kpiNewDeltaValue');
+  if (deltaWrap && deltaVal) {
+    if (newThisWeek > 0) {
+      deltaWrap.classList.remove('hidden');
+      deltaVal.textContent = '+' + newThisWeek + ' nos últimos 7d';
+    } else {
+      deltaWrap.classList.add('hidden');
+    }
+  }
+
+  // Card 2 — engajamento médio real
+  const avgEng = total ? (artists.reduce((s, a) => s + (a.engagement || 0), 0) / total) : 0;
+  const avgEl = document.getElementById('kpiAvgEngagement');
+  if (avgEl) avgEl.textContent = avgEng.toFixed(1);
+
+  // Card 3 — hot count + avatares dos top artistas em alta
+  const hot = getHotArtists();
+  const hotEl = document.getElementById('kpiHotCount');
+  if (hotEl) hotEl.textContent = hot.length;
+
+  const avatarsEl = document.getElementById('kpiHotAvatars');
+  if (avatarsEl) {
+    const top = hot.slice(0, 4);
+    const overflow = Math.max(0, hot.length - top.length);
+    avatarsEl.innerHTML = top.map(a => {
+      const grad = a.grad || 'avatar-gradient-1';
+      return `<div class="${grad} w-7 h-7 rounded-full ring-2 ring-ink-900 flex items-center justify-center text-[10px] font-bold text-white" title="${a.name}">${a.avatar || '?'}</div>`;
+    }).join('') + (overflow > 0
+      ? `<div class="w-7 h-7 rounded-full ring-2 ring-ink-900 bg-white/5 flex items-center justify-center text-[10px] font-semibold text-white/60">+${overflow}</div>`
+      : '');
+  }
+}
+
+/* ==== Sidebar counters ==== */
+function updateCounters() {
+  const savedEl = document.getElementById('count-saved');
+  const contactedEl = document.getElementById('count-contacted');
+  if (savedArtists.size > 0) {
+    savedEl.classList.remove('hidden');
+    savedEl.textContent = savedArtists.size;
+  } else {
+    savedEl.classList.add('hidden');
+  }
+  contactedEl.textContent = addedArtists.size;
+  if (typeof updateNotifBadge === 'function') updateNotifBadge();
+}
+
+/* ==== Notifications panel ==== */
+let notifAcknowledged = false;
+
+function getHotArtists() {
+  return artists
+    .filter(a => a.status === 'Viralizando' || (a.status === 'Em Alta' && a.engagement >= 17))
+    .sort((a, b) => b.engagement - a.engagement);
+}
+
+function getRecentContacted() {
+  return Array.from(addedArtists)
+    .map(id => {
+      const a = artists.find(x => x.id === id);
+      if (!a) return null;
+      const log = contactLog.get(id);
+      const at = log?.date ? new Date(log.date) : null;
+      return { artist: a, at, opened: !!log?.opened };
+    })
+    .filter(Boolean)
+    .sort((x, y) => (y.at?.getTime() || 0) - (x.at?.getTime() || 0));
+}
+
+function relTime(date) {
+  if (!date) return 'agora';
+  const mins = Math.round((Date.now() - date.getTime()) / 60000);
+  if (mins < 1) return 'agora';
+  if (mins < 60) return `há ${mins} min`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `há ${hrs}h`;
+  return `há ${Math.round(hrs / 24)}d`;
+}
+
+function toggleNotifPanel(e) {
+  if (e) e.stopPropagation();
+  const panel = document.getElementById('notifPanel');
+  const isOpen = !panel.classList.contains('hidden');
+  if (isOpen) {
+    panel.classList.add('hidden');
+  } else {
+    renderNotifs();
+    panel.classList.remove('hidden');
+  }
+}
+
+function closeNotifPanel() {
+  document.getElementById('notifPanel')?.classList.add('hidden');
+}
+
+function markAllNotifsRead(e) {
+  if (e) e.stopPropagation();
+  notifAcknowledged = true;
+  updateNotifBadge();
+}
+
+function updateNotifBadge() {
+  const badge = document.getElementById('notifBadge');
+  if (!badge) return;
+  const count = getHotArtists().length + addedArtists.size;
+  if (notifAcknowledged || count === 0) {
+    badge.classList.add('hidden');
+  } else {
+    badge.classList.remove('hidden');
+    badge.textContent = count > 99 ? '99+' : String(count);
+  }
+}
+
+function renderNotifs() {
+  notifAcknowledged = false;
+  const hot = getHotArtists().slice(0, 4);
+  const contacted = getRecentContacted().slice(0, 5);
+
+  document.getElementById('notifHotList').innerHTML = hot.length === 0
+    ? '<div class="px-3 py-2.5 text-[11px] text-white/40 italic">Nenhum artista viralizando agora.</div>'
+    : hot.map(a => `
+      <div onclick="focusArtistFromNotif(${a.id})" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 cursor-pointer transition">
+        <div class="${a.grad} w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0">${a.avatar}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-white truncate">${a.name}</div>
+          <div class="text-[11px] text-white/50 truncate">${a.genre} · ${a.followers} · ${a.engagement}% engaj.</div>
+        </div>
+        <span class="text-[10px] shrink-0">${a.status === 'Viralizando' ? '🚀' : '🔥'}</span>
+      </div>
+    `).join('');
+
+  document.getElementById('notifContactedList').innerHTML = contacted.length === 0
+    ? '<div class="px-3 py-2.5 text-[11px] text-white/40 italic">Nenhum artista contatado ainda. Clique em "Adicionar ao CRM" em qualquer linha do Radar.</div>'
+    : contacted.map(item => `
+      <div onclick="showEmailPreview(artists.find(x => x.id === ${item.artist.id})); closeNotifPanel();" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 cursor-pointer transition">
+        <div class="${item.artist.grad} w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0">${item.artist.avatar}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-white truncate">${item.artist.name}</div>
+          <div class="text-[11px] text-white/50 truncate">E-mail ${item.opened ? 'aberto' : 'entregue'} · ${relTime(item.at)}</div>
+        </div>
+        ${item.opened ? '<span class="text-accent-green text-xs shrink-0">✓</span>' : '<span class="text-white/30 text-xs shrink-0">○</span>'}
+      </div>
+    `).join('');
+}
+
+function focusArtistFromNotif(id) {
+  switchTab('radar');
+  closeNotifPanel();
+  setTimeout(() => {
+    const btn = document.getElementById('crm-btn-' + id);
+    const row = btn?.closest('tr');
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.style.transition = 'background 1.5s';
+      row.style.background = 'rgba(122,61,255,0.18)';
+      setTimeout(() => row.style.background = '', 2200);
+    }
+  }, 120);
+}
+
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('notifPanel');
+  const btn = document.getElementById('notifBtn');
+  if (!panel || panel.classList.contains('hidden')) return;
+  if (!panel.contains(e.target) && !btn.contains(e.target)) closeNotifPanel();
+});
+
+/* ==== Filters view ==== */
+const DEFAULT_FILTERS = {
+  platforms: ['tiktok', 'youtube'],
+  status: ['Viralizando', 'Em Alta', 'Estável'],
+  minEngagement: 5,
+  minFollowers: 1000,
+  genres: [] // empty = all
+};
+let activeFilters = JSON.parse(JSON.stringify(DEFAULT_FILTERS));
+
+function parseFollowers(str) {
+  const n = parseFloat(String(str).replace(',', '.'));
+  if (/k/i.test(str)) return n * 1000;
+  if (/m/i.test(str)) return n * 1000000;
+  return n;
+}
+
+function buildGenreChips() {
+  const container = document.getElementById('filterGenres');
+  const unique = Array.from(new Set(artists.map(a => a.genre))).sort();
+  container.innerHTML = unique.map(g => `
+    <label class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition has-[:checked]:bg-brand-500/20 has-[:checked]:border-brand-500/40">
+      <input type="checkbox" value="${g}" class="accent-brand-500 w-3.5 h-3.5"/>
+      <span class="text-xs text-white/80">${g}</span>
+    </label>
+  `).join('');
+  container.querySelectorAll('input').forEach(el => el.addEventListener('change', updateFilterMatchCount));
+}
+
+function readFiltersFromUI() {
+  return {
+    platforms: Array.from(document.querySelectorAll('#filterPlatforms input:checked')).map(i => i.value),
+    status:    Array.from(document.querySelectorAll('#filterStatus input:checked')).map(i => i.value),
+    minEngagement: parseInt(document.getElementById('filterEngagement').value, 10),
+    minFollowers:  parseInt(document.getElementById('filterFollowers').value, 10),
+    genres: Array.from(document.querySelectorAll('#filterGenres input:checked')).map(i => i.value)
+  };
+}
+
+function matchesFilters(a, f) {
+  if (f.platforms.length && !f.platforms.includes(a.platform)) return false;
+  if (f.status.length && !f.status.includes(a.status)) return false;
+  if (a.engagement < f.minEngagement) return false;
+  if (parseFollowers(a.followers) < f.minFollowers) return false;
+  if (f.genres.length && !f.genres.includes(a.genre)) return false;
+  return true;
+}
+
+function updateFilterMatchCount() {
+  const f = readFiltersFromUI();
+  const count = artists.filter(a => matchesFilters(a, f)).length;
+  document.getElementById('filterMatchInfo').innerHTML =
+    `<span class="text-white font-semibold">${count}</span> de ${artists.length} artistas correspondem aos filtros atuais`;
+}
+
+function saveFilters() {
+  activeFilters = readFiltersFromUI();
+  const count = artists.filter(a => matchesFilters(a, activeFilters)).length;
+  currentPage = 1;
+  renderArtists();
+  updateFilterBadge();
+  syncQuickFiltersUI();
+  toast({
+    title: 'Filtros atualizados',
+    message: `Seu radar agora está monitorando ${count} artistas que atendem aos critérios.`,
+    variant: 'success',
+    icon: '🎛️',
+    timeout: 3000
+  });
+}
+
+function resetFilters() {
+  document.querySelectorAll('#filterPlatforms input').forEach(i => {
+    i.checked = DEFAULT_FILTERS.platforms.includes(i.value);
+  });
+  document.querySelectorAll('#filterStatus input').forEach(i => {
+    i.checked = DEFAULT_FILTERS.status.includes(i.value);
+  });
+  document.querySelectorAll('#filterGenres input').forEach(i => { i.checked = false; });
+  const eng = document.getElementById('filterEngagement');
+  const fol = document.getElementById('filterFollowers');
+  eng.value = DEFAULT_FILTERS.minEngagement;
+  fol.value = DEFAULT_FILTERS.minFollowers;
+  document.getElementById('filterEngagementValue').textContent = eng.value + '%';
+  document.getElementById('filterFollowersValue').textContent = Number(fol.value).toLocaleString('pt-BR');
+  updateFilterMatchCount();
+  toast({ title: 'Filtros restaurados', message: 'Configuração voltou ao padrão recomendado.', variant: 'info', icon: '↺', timeout: 2200 });
+}
+
+/* ============================================================
+   RADAR — Filtros & Ordenação (campo + direção)
+   ============================================================ */
+const SORT_FIELDS = [
+  { id: 'default',    label: 'Padrão' },
+  { id: 'name',       label: 'Nome' },
+  { id: 'followers',  label: 'Seguidores' },
+  { id: 'engagement', label: 'Engajamento' },
+  { id: 'status',     label: 'Status' }
+];
+const STATUS_RANK = { 'Viralizando': 0, 'Em Alta': 1, 'Estável': 2 };
+
+let activeSort = { field: 'default', direction: 'asc' };
+
+function getSortComparator() {
+  const { field, direction } = activeSort;
+  const sign = direction === 'desc' ? -1 : 1;
+  switch (field) {
+    case 'name':       return (a, b) => sign * a.name.localeCompare(b.name, 'pt-BR');
+    case 'followers':  return (a, b) => sign * (parseFollowers(a.followers) - parseFollowers(b.followers));
+    case 'engagement': return (a, b) => sign * (a.engagement - b.engagement);
+    case 'status':     return (a, b) => sign * ((STATUS_RANK[a.status] ?? 3) - (STATUS_RANK[b.status] ?? 3));
+    case 'default':
+    default:
+      // Artistas recém-prospectados (com scrapedAt) aparecem no topo, em ordem de lote:
+      // lote mais novo primeiro; dentro do lote, na ordem em que foram prospectados (id ASC).
+      return (a, b) => {
+        const aHas = !!a.scrapedAt, bHas = !!b.scrapedAt;
+        if (aHas !== bHas) return aHas ? -1 : 1;
+        if (aHas && bHas) {
+          const cmp = b.scrapedAt.localeCompare(a.scrapedAt);
+          if (cmp !== 0) return cmp;
+        }
+        return a.id - b.id;
+      };
+  }
+}
+
+function renderSortFieldChips() {
+  const container = document.getElementById('qfSortField');
+  if (!container) return;
+  container.innerHTML = SORT_FIELDS.map(f => `
+    <button type="button" data-field="${f.id}" class="sort-field-chip ${activeSort.field === f.id ? 'active' : ''}">${f.label}</button>
+  `).join('');
+  container.querySelectorAll('[data-field]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeSort.field = btn.dataset.field;
+      renderSortFieldChips();
+      applySortLabel();
+      renderArtists();
+    });
+  });
+}
+
+function applySortLabel() {
+  const f = SORT_FIELDS.find(x => x.id === activeSort.field);
+  const label = document.getElementById('sortLabel');
+  if (!label) return;
+  if (activeSort.field === 'default') label.textContent = 'Ordenar';
+  else label.textContent = f.label + (activeSort.direction === 'desc' ? ' ↓' : ' ↑');
+}
+
+function syncSortDirectionUI() {
+  document.querySelectorAll('#qfSortDirection .sort-dir-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.dir === activeSort.direction);
+  });
+}
+
+function renderGenreChipsPanel() {
+  const container = document.getElementById('qfGenres');
+  if (!container) return;
+  const unique = Array.from(new Set(artists.map(a => a.genre))).sort();
+  const selected = new Set(activeFilters.genres || []);
+  container.innerHTML = unique.map(g => `
+    <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 has-[:checked]:bg-brand-500/20 has-[:checked]:border-brand-500/40">
+      <input type="checkbox" value="${g}" ${selected.has(g) ? 'checked' : ''} class="accent-brand-500 w-3 h-3"/>
+      <span class="text-xs text-white/80">${g}</span>
+    </label>
+  `).join('');
+}
+
+function syncPanelFromState() {
+  const allPlatforms = ['tiktok', 'youtube'];
+  const allStatus = ['Viralizando', 'Em Alta', 'Estável'];
+  document.querySelectorAll('#qfPlatform input').forEach(i => {
+    i.checked = activeFilters.platforms.length > 0 && activeFilters.platforms.length < allPlatforms.length
+      ? activeFilters.platforms.includes(i.value) : false;
+  });
+  document.querySelectorAll('#qfStatus input').forEach(i => {
+    i.checked = activeFilters.status.length > 0 && activeFilters.status.length < allStatus.length
+      ? activeFilters.status.includes(i.value) : false;
+  });
+  const eng = document.getElementById('qfEngagement');
+  const fol = document.getElementById('qfFollowers');
+  eng.value = activeFilters.minEngagement || 0;
+  fol.value = activeFilters.minFollowers || 0;
+  document.getElementById('qfEngagementValue').textContent = eng.value + '%';
+  document.getElementById('qfFollowersValue').textContent = Number(fol.value).toLocaleString('pt-BR');
+  renderGenreChipsPanel();
+  updateMatchSummary();
+}
+
+function readPanelFilters() {
+  const platforms = Array.from(document.querySelectorAll('#qfPlatform input:checked')).map(i => i.value);
+  const status    = Array.from(document.querySelectorAll('#qfStatus input:checked')).map(i => i.value);
+  const genres    = Array.from(document.querySelectorAll('#qfGenres input:checked')).map(i => i.value);
+  return {
+    platforms: platforms.length ? platforms : ['tiktok', 'youtube'],
+    status:    status.length ? status : ['Viralizando', 'Em Alta', 'Estável'],
+    minEngagement: parseInt(document.getElementById('qfEngagement').value, 10) || 0,
+    minFollowers:  parseInt(document.getElementById('qfFollowers').value, 10) || 0,
+    genres: genres
+  };
+}
+
+function updateMatchSummary() {
+  const f = readPanelFilters();
+  const count = artists.filter(a => matchesFilters(a, f)).length;
+  const el = document.getElementById('filterMatchSummary');
+  if (el) el.textContent = `${count} de ${artists.length} correspondem`;
+}
+
+function applyPanelFilters() {
+  activeFilters = readPanelFilters();
+  currentPage = 1;
+  renderArtists();
+  updateFilterBadge();
+  const count = artists.filter(a => matchesFilters(a, activeFilters)).length;
+  toast({ title: 'Filtros aplicados', message: `${count} de ${artists.length} artistas no radar.`, variant: 'success', icon: '🎛️', timeout: 2400 });
+  closeFilterPanel();
+}
+
+function clearAllFilters() {
+  activeFilters = { platforms: ['tiktok', 'youtube'], status: ['Viralizando', 'Em Alta', 'Estável'], minEngagement: 0, minFollowers: 0, genres: [] };
+  activeSort = { field: 'default', direction: 'asc' };
+  applySortLabel();
+  currentPage = 1;
+  syncPanelFromState();
+  renderSortFieldChips();
+  syncSortDirectionUI();
+  renderArtists();
+  updateFilterBadge();
+  toast({ title: 'Filtros limpos', message: 'Radar voltou ao padrão.', variant: 'info', icon: '↺', timeout: 2000 });
+}
+
+function updateFilterBadge() {
+  const badge = document.getElementById('filterBadge');
+  if (!badge) return;
+  let n = 0;
+  if (activeFilters.platforms.length > 0 && activeFilters.platforms.length < 2) n++;
+  if (activeFilters.status.length > 0 && activeFilters.status.length < 3) n++;
+  if (activeFilters.minEngagement > 0) n++;
+  if (activeFilters.minFollowers > 0) n++;
+  if (activeFilters.genres && activeFilters.genres.length > 0) n++;
+  if (n === 0) { badge.classList.add('hidden'); }
+  else { badge.classList.remove('hidden'); badge.textContent = n; }
+}
+
+/* ---- Panel open/close ---- */
+function openFilterPanel() {
+  document.getElementById('filterPanel').classList.remove('hidden');
+  syncPanelFromState();
+  renderSortFieldChips();
+  syncSortDirectionUI();
+}
+function closeFilterPanel() {
+  document.getElementById('filterPanel').classList.add('hidden');
+}
+function toggleFilterPanel() {
+  const panel = document.getElementById('filterPanel');
+  if (panel.classList.contains('hidden')) openFilterPanel();
+  else closeFilterPanel();
+}
+
+/* ---- Wiring (event listeners, sem inline onclick) ---- */
+document.getElementById('btnFilters').addEventListener('click', toggleFilterPanel);
+document.getElementById('btnSort').addEventListener('click',    toggleFilterPanel);
+document.getElementById('btnClosePanel').addEventListener('click', closeFilterPanel);
+document.getElementById('btnApply').addEventListener('click', applyPanelFilters);
+document.getElementById('btnClear').addEventListener('click', clearAllFilters);
+
+document.getElementById('qfEngagement').addEventListener('input', (e) => {
+  document.getElementById('qfEngagementValue').textContent = e.target.value + '%';
+  updateMatchSummary();
+});
+document.getElementById('qfFollowers').addEventListener('input', (e) => {
+  document.getElementById('qfFollowersValue').textContent = Number(e.target.value).toLocaleString('pt-BR');
+  updateMatchSummary();
+});
+document.getElementById('filterPanel').addEventListener('change', (e) => {
+  if (e.target.matches('input[type="checkbox"]')) updateMatchSummary();
+});
+
+// Sort direction toggle
+document.querySelectorAll('#qfSortDirection .sort-dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeSort.direction = btn.dataset.dir;
+    syncSortDirectionUI();
+    applySortLabel();
+    renderArtists();
+  });
+});
+
+/* ==== CSV export ==== */
+function exportCsv() {
+  const rows = getDisplayedArtists();
+  const headers = ['Nome', 'Handle', 'E-mail', 'Plataforma', 'Gênero', 'Seguidores', 'Engajamento %', 'Status', 'No CRM'];
+  const lines = [headers.join(';')];
+  rows.forEach(a => {
+    const csv = [
+      a.name, a.handle, a.email, a.platform, a.genre,
+      a.followers, a.engagement, a.status, a.crmAdded ? 'Sim' : 'Não'
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';');
+    lines.push(csv);
+  });
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `olheiro-digital_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast({ title: 'CSV exportado', message: `${rows.length} artistas exportados.`, variant: 'success', icon: '📄', timeout: 2500 });
+}
+document.getElementById('btnExport').addEventListener('click', exportCsv);
+
+/* Filter sliders live update */
+document.getElementById('filterEngagement').addEventListener('input', (e) => {
+  document.getElementById('filterEngagementValue').textContent = e.target.value + '%';
+  updateFilterMatchCount();
+});
+document.getElementById('filterFollowers').addEventListener('input', (e) => {
+  document.getElementById('filterFollowersValue').textContent = Number(e.target.value).toLocaleString('pt-BR');
+  updateFilterMatchCount();
+});
+document.querySelectorAll('#filterPlatforms input, #filterStatus input').forEach(el => {
+  el.addEventListener('change', updateFilterMatchCount);
+});
+
+/* ==== Status / Countdown do scan automático (cron diário 08:00 BRT) ==== */
+let nextRunAt = null;
+
+async function refreshStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    nextRunAt = new Date(data.nextRun);
+    updateNextScanUI();
+  } catch (err) {
+    console.error('status fetch failed', err);
+  }
+}
+
+function updateNextScanUI() {
+  const label = document.getElementById('nextScanLabel');
+  const bar = document.getElementById('scanProgress');
+  if (!label || !nextRunAt) return;
+
+  const now = new Date();
+  const diffMs = nextRunAt - now;
+  if (diffMs <= 0) { refreshStatus(); return; }
+
+  const totalMin = Math.floor(diffMs / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  const timeStr = h > 0 ? `${h}h ${m}min` : `${m}min`;
+
+  const hhmm = nextRunAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+  const dateStr = nextRunAt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'America/Sao_Paulo' });
+  label.innerHTML = `Próximo scan em <strong class="text-white/80">${timeStr}</strong> · ${dateStr} ${hhmm}`;
+
+  if (bar) {
+    const dayMs = 24 * 60 * 60 * 1000;
+    const elapsed = dayMs - diffMs;
+    const pct = Math.max(2, Math.min(98, (elapsed / dayMs) * 100));
+    bar.style.width = pct + '%';
+  }
+}
+
+/* ==== Data do header ==== */
+function updateHeaderDate() {
+  const el = document.getElementById('headerDate');
+  if (!el) return;
+  const now = new Date();
+  const formatted = now.toLocaleDateString('pt-BR', {
+    weekday: 'long', day: '2-digit', month: 'short', year: 'numeric'
+  }).replace('.', '');
+  el.textContent = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+/* ==== Init ==== */
+(async function init() {
+  updateHeaderDate();
+  setInterval(updateHeaderDate, 60 * 1000);
+  try {
+    await loadArtists();
+  } catch (err) {
+    console.error('load failed', err);
+    toast({ title: 'Erro ao carregar dados', message: 'Verifique se o servidor está rodando.', variant: 'info', icon: '⚠️' });
+  }
+  buildGenreChips();
+  renderArtists();
+  updateKpis();
+  updateCounters();
+  updateFilterBadge();
+  updateNotifBadge();
+  const countEl = document.getElementById('count-radar');
+  if (countEl) countEl.textContent = artists.length;
+  updateFilterMatchCount();
+
+  await refreshStatus();
+  setInterval(updateNextScanUI, 30 * 1000);   // tick a cada 30s
+  setInterval(refreshStatus,    5 * 60 * 1000); // re-sincroniza com o servidor a cada 5min
+})();
+</script>
+</body>
+</html>

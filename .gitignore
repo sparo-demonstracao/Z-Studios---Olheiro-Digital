@@ -1,0 +1,7 @@
+node_modules/
+npm-debug.log
+.DS_Store
+.env
+# Arquivo de dados gerado em runtime — NÃO commite
+# (o artists.seed.json vai no git; o artists.json, não)
+data/artists.json

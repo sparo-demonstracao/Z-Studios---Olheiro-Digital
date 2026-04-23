@@ -1,0 +1,19 @@
+{
+  "name": "olheiro-digital",
+  "version": "1.0.0",
+  "description": "Radar de prospecção de talentos musicais — Z Studios",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "jsdom": "^29.0.2",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^6.10.1"
+  }
+}
