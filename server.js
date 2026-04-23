@@ -340,7 +340,9 @@ function buildArtist(ytArtist, ttProfile, query) {
     handle,
     email,
     hasEmail: !!email,
-    platform: ttProfile ? 'tiktok' : 'youtube-music',
+    // platform usa os rótulos que a UI já filtra ('tiktok'/'youtube').
+    // O diferencial "YouTube Music" aparece via ytMusicUrl/ytMusicId no card.
+    platform: ttProfile ? 'tiktok' : 'youtube',
     genre,
     genresOfficial: topic.map(t => String(t).split('/').pop().replace(/_/g, ' ')),
     followers: formatFollowers(displayFollowers),
@@ -725,6 +727,19 @@ app.get('/api/admin/state', (req, res) => {
     last10Scraped: scraped.map(a => ({ id: a.id, name: a.name, platform: a.platform, ytMusicId: a.ytMusicId || null, scrapedAt: a.scrapedAt })),
     ytMusicIdsCount: artists.map(a => a.ytMusicId).filter(Boolean).length
   });
+});
+
+// Admin: corrige o campo platform dos artistas já salvos antes do fix
+// ('youtube-music' → 'youtube'). Idempotente — pode rodar várias vezes.
+app.post('/api/admin/fix-platforms', (req, res) => {
+  const artists = readArtists();
+  let fixed = 0;
+  for (const a of artists) {
+    if (a.platform === 'youtube-music') { a.platform = 'youtube'; fixed++; }
+  }
+  writeArtists(artists);
+  console.log(`[admin] 🔧 fix-platforms: ${fixed} artistas atualizados`);
+  res.json({ ok: true, fixed, total: artists.length });
 });
 
 // Admin: reseta o banco de volta ao seed. Exige ?confirm=sim pra evitar acidente.
