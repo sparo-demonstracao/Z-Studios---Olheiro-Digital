@@ -1381,13 +1381,13 @@ function renderArtists() {
     return `
     <tr class="row-hover transition-colors">
       <td class="py-4 px-5">
-        <div class="flex items-center gap-3">
+        <div onclick="openArtistProfile(${a.id}, event)" role="link" tabindex="0" title="Abrir perfil de ${a.name} no ${a.platform === 'youtube' ? 'YouTube' : 'TikTok'}" class="flex items-center gap-3 cursor-pointer group -mx-2 px-2 py-1 rounded-lg hover:bg-white/5 transition">
           <div class="relative">
             <div class="${a.grad} w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>
             ${a.status === 'Viralizando' ? '<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-pink text-[9px] flex items-center justify-center">🔥</span>':''}
           </div>
           <div class="leading-tight">
-            <div class="font-semibold text-white">${a.name}</div>
+            <div class="font-semibold text-white group-hover:text-brand-200 transition-colors">${a.name}</div>
             <div class="text-[11px] text-white/45">${a.handle}</div>
           </div>
         </div>
@@ -1434,16 +1434,18 @@ function renderArtists() {
       return `
         <div class="artist-card">
           <div class="flex items-start gap-3">
-            <div class="relative shrink-0">
-              <div class="${a.grad} w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>
-              ${a.status === 'Viralizando' ? '<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-pink text-[9px] flex items-center justify-center">🔥</span>':''}
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="font-semibold text-white truncate">${a.name}</div>
-              <div class="text-[11px] text-white/45 truncate">${a.handle}</div>
-              <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
-                ${statusBadge(a.status)}
-                <span class="inline-block px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] font-medium text-white/70">${a.genre}</span>
+            <div onclick="openArtistProfile(${a.id}, event)" role="link" class="flex items-start gap-3 flex-1 min-w-0 cursor-pointer group rounded-lg -m-1 p-1 hover:bg-white/5 transition">
+              <div class="relative shrink-0">
+                <div class="${a.grad} w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>
+                ${a.status === 'Viralizando' ? '<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-pink text-[9px] flex items-center justify-center">🔥</span>':''}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold text-white truncate group-hover:text-brand-200 transition-colors">${a.name}</div>
+                <div class="text-[11px] text-white/45 truncate">${a.handle}</div>
+                <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                  ${statusBadge(a.status)}
+                  <span class="inline-block px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] font-medium text-white/70">${a.genre}</span>
+                </div>
               </div>
             </div>
             <button
@@ -1511,6 +1513,21 @@ function goToPage(p) {
   currentPage = p;
   renderArtists();
   document.querySelector('#artistsTableBody').closest('section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function openArtistProfile(id, e) {
+  if (e) e.stopPropagation();
+  const a = artists.find(x => x.id === id);
+  if (!a) return;
+  const handle = String(a.handle || '').replace(/^@/, '').trim();
+  if (!handle) {
+    toast({ title: 'Perfil indisponível', message: `Sem handle cadastrado para ${a.name}.`, variant: 'info', icon: 'ℹ️', timeout: 2400 });
+    return;
+  }
+  const url = a.platform === 'youtube'
+    ? `https://www.youtube.com/@${encodeURIComponent(handle)}`
+    : `https://www.tiktok.com/@${encodeURIComponent(handle)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 /* ==== Toast ==== */
