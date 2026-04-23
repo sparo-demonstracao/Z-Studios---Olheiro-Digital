@@ -677,7 +677,7 @@
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
-            <input id="scrapeQuery" type="text" placeholder="funk 150, rap drill, trap..." maxlength="80" class="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-400 focus:bg-white/10 transition w-36 sm:w-52" title="Busca livre no TikTok e YouTube via Apify" />
+            <input id="scrapeQuery" type="text" placeholder="funk, rap, trap... (opcional)" maxlength="80" class="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-400 focus:bg-white/10 transition w-36 sm:w-52" title="Filtra os artistas descobertos no Spotify por gênero. Deixe vazio para retornar todos os gêneros." />
             <button id="refreshBtn" aria-label="Prospectar artistas" class="btn-primary rounded-xl px-3 sm:px-4 py-2.5 text-sm font-semibold text-white flex items-center gap-2 shrink-0">
               <svg id="refreshIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg>
               <span id="refreshText" class="hidden sm:inline">Prospectar Artistas</span>
@@ -1378,13 +1378,18 @@ function renderArtists() {
     const btnContent = added
       ? `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l4 4L19 7"/></svg> Adicionado`
       : `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg> Adicionar ao CRM`;
+    const profileLabel = a.ytMusicUrl ? 'YouTube Music' : (a.platform === 'youtube' ? 'YouTube' : 'TikTok');
+    const avatarInner = a.imageUrl
+      ? `<img src="${a.imageUrl}" alt="" class="w-11 h-11 rounded-xl object-cover shadow-lg" loading="lazy" />`
+      : `<div class="${a.grad} w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>`;
     return `
     <tr class="row-hover transition-colors">
       <td class="py-4 px-5">
-        <div onclick="openArtistProfile(${a.id}, event)" role="link" tabindex="0" title="Abrir perfil de ${a.name} no ${a.platform === 'youtube' ? 'YouTube' : 'TikTok'}" class="flex items-center gap-3 cursor-pointer group -mx-2 px-2 py-1 rounded-lg hover:bg-white/5 transition">
+        <div onclick="openArtistProfile(${a.id}, event)" role="link" tabindex="0" title="Abrir perfil de ${a.name} no ${profileLabel}" class="flex items-center gap-3 cursor-pointer group -mx-2 px-2 py-1 rounded-lg hover:bg-white/5 transition">
           <div class="relative">
-            <div class="${a.grad} w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>
+            ${avatarInner}
             ${a.status === 'Viralizando' ? '<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-pink text-[9px] flex items-center justify-center">🔥</span>':''}
+            ${a.ytMusicUrl ? '<span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-red-600 border border-ink-850 flex items-center justify-center text-[9px]" title="Perfil no YouTube Music">▶</span>' : ''}
           </div>
           <div class="leading-tight">
             <div class="font-semibold text-white group-hover:text-brand-200 transition-colors">${a.name}</div>
@@ -1436,8 +1441,11 @@ function renderArtists() {
           <div class="flex items-start gap-3">
             <div onclick="openArtistProfile(${a.id}, event)" role="link" class="flex items-start gap-3 flex-1 min-w-0 cursor-pointer group rounded-lg -m-1 p-1 hover:bg-white/5 transition">
               <div class="relative shrink-0">
-                <div class="${a.grad} w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>
+                ${a.imageUrl
+                  ? `<img src="${a.imageUrl}" alt="" class="w-12 h-12 rounded-xl object-cover shadow-lg" loading="lazy" />`
+                  : `<div class="${a.grad} w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg">${a.avatar}</div>`}
                 ${a.status === 'Viralizando' ? '<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-pink text-[9px] flex items-center justify-center">🔥</span>':''}
+                ${a.ytMusicUrl ? '<span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-red-600 border border-ink-850 flex items-center justify-center text-[9px]" title="Perfil no YouTube Music">▶</span>' : ''}
               </div>
               <div class="min-w-0 flex-1">
                 <div class="font-semibold text-white truncate group-hover:text-brand-200 transition-colors">${a.name}</div>
@@ -1519,15 +1527,24 @@ function openArtistProfile(id, e) {
   if (e) e.stopPropagation();
   const a = artists.find(x => x.id === id);
   if (!a) return;
-  const handle = String(a.handle || '').replace(/^@/, '').trim();
-  if (!handle) {
-    toast({ title: 'Perfil indisponível', message: `Sem handle cadastrado para ${a.name}.`, variant: 'info', icon: 'ℹ️', timeout: 2400 });
+  // Preferência: YouTube Music > canal YouTube > TikTok > fallback
+  if (a.ytMusicUrl) {
+    window.open(a.ytMusicUrl, '_blank', 'noopener,noreferrer');
     return;
   }
-  const url = a.platform === 'youtube'
-    ? `https://www.youtube.com/@${encodeURIComponent(handle)}`
-    : `https://www.tiktok.com/@${encodeURIComponent(handle)}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  if (a.ytChannelUrl) {
+    window.open(a.ytChannelUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  const handle = String(a.handle || '').replace(/^@/, '').trim();
+  if (handle) {
+    const url = a.platform === 'youtube'
+      ? `https://www.youtube.com/@${encodeURIComponent(handle)}`
+      : `https://www.tiktok.com/@${encodeURIComponent(handle)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  toast({ title: 'Perfil indisponível', message: `Sem link cadastrado para ${a.name}.`, variant: 'info', icon: 'ℹ️', timeout: 2400 });
 }
 
 /* ==== Toast ==== */
@@ -1561,10 +1578,9 @@ function toast({ title, message, variant = 'success', icon = '✅', timeout = 40
 /* ==== Refresh button — chama o scraper no servidor ==== */
 /* ==== Scrape Process Modal — progresso real via SSE ==== */
 const SCRAPE_STEPS = [
-  { id: 'connect', icon: '🔐', label: 'Conectando ao Apify',          detail: 'iniciando runs dos actors TikTok + YouTube' },
-  { id: 'tiktok',  icon: '🎵', label: 'TikTok',                        detail: 'clockworks/tiktok-scraper' },
-  { id: 'youtube', icon: '▶️', label: 'YouTube',                       detail: 'streamers/youtube-scraper' },
-  { id: 'process', icon: '🧩', label: 'Processando e deduplicando',    detail: 'inferência de gênero · extração de e-mail · dedup' },
+  { id: 'ytmusic', icon: '🎧', label: 'Descoberta via YouTube Music',  detail: 'artistas BR com música distribuída' },
+  { id: 'tiktok',  icon: '🎵', label: 'Enriquecimento TikTok',         detail: 'buscando engajamento social por artista' },
+  { id: 'process', icon: '🧩', label: 'Cruzando dados e deduplicando', detail: 'matching fuzzy · scoring · dedup' },
   { id: 'save',    icon: '💾', label: 'Salvando no Radar',             detail: 'persistência no JSON do servidor' }
 ];
 
@@ -1577,8 +1593,8 @@ function openScrapeModal(query) {
   const list = document.getElementById('scrapeStepsList');
   document.getElementById('scrapeTitle').textContent = 'Prospectando talentos';
   document.getElementById('scrapeSubtitle').textContent = query
-    ? `Buscando "${query}" no TikTok e no YouTube via Apify — isso pode levar 1–3 min.`
-    : 'O motor de prospecção está varrendo as redes em tempo real.';
+    ? `Descobrindo artistas de "${query}" no YouTube Music e cruzando com TikTok — isso pode levar 1–3 min.`
+    : 'Descobrindo artistas BR no YouTube Music e cruzando com TikTok.';
   document.getElementById('scrapeLiveBadge').classList.remove('hidden');
   document.getElementById('scrapeHeaderIcon').classList.add('spin');
   document.getElementById('scrapeProgressBar').style.width = '0%';
@@ -1666,23 +1682,36 @@ function describeActor(status, itemCount, err) {
 
 function renderScrapeProgress(snap) {
   if (!snap) return;
-  // Step 1 — connect: done as soon as we get any snapshot (server has the runIds)
-  setStepState('connect', 'done', 'runs criados · agregando resultados em tempo real');
 
+  // Step 1 — YouTube Music discovery
+  const ym = snap.ytMusic || {};
+  if (ym.error) {
+    setStepState('ytmusic', 'error', `falhou · ${String(ym.error).slice(0, 60)}`);
+  } else if (ym.status === 'SUCCEEDED') {
+    setStepState('ytmusic', 'done', `${ym.artistCount || 0} artistas candidatos encontrados`);
+  } else if (ym.status === 'RUNNING') {
+    setStepState('ytmusic', 'running', 'buscando artistas brasileiros no YouTube Music…');
+  } else {
+    setStepState('ytmusic', 'pending');
+  }
+
+  // Step 2 — TikTok enrichment
   const tt = describeActor(snap.tiktok && snap.tiktok.status, snap.tiktok && snap.tiktok.itemCount, snap.tiktok && snap.tiktok.error);
-  setStepState('tiktok', tt.state, `${SCRAPE_STEPS[1].label} · ${tt.text}`);
+  if (snap.phase === 'ytmusic_discovery') {
+    setStepState('tiktok', 'pending');
+  } else {
+    setStepState('tiktok', tt.state, `${SCRAPE_STEPS[1].label} · ${tt.text}`);
+  }
 
-  const yt = describeActor(snap.youtube && snap.youtube.status, snap.youtube && snap.youtube.itemCount, snap.youtube && snap.youtube.error);
-  setStepState('youtube', yt.state, `${SCRAPE_STEPS[2].label} · ${yt.text}`);
-
+  // Steps 3 & 4 — process + save
   if (snap.phase === 'processing') {
-    setStepState('process', 'running', 'deduplicando e inferindo gênero…');
+    setStepState('process', 'running', 'cruzando artistas do YouTube Music com perfis TikTok…');
     setStepState('save', 'pending');
   } else if (snap.phase === 'saving') {
-    setStepState('process', 'done', 'deduplicação concluída');
+    setStepState('process', 'done', 'matching concluído');
     setStepState('save', 'running', 'gravando em artists.json…');
   } else if (snap.phase === 'done') {
-    setStepState('process', 'done', 'deduplicação concluída');
+    setStepState('process', 'done', 'matching concluído');
     setStepState('save', 'done', 'gravado no Radar');
   } else {
     setStepState('process', 'pending');

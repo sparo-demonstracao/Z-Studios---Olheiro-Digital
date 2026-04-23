@@ -57,3 +57,23 @@ Sem o Volume, o app funciona, mas perde os dados a cada redeploy (volta ao seed 
 |------------|------------|----------------------------------------------|
 | `PORT`     | `3000`     | Porta do servidor (Railway define sozinho)   |
 | `DATA_DIR` | `./data`   | Diretório onde o `artists.json` é gravado    |
+
+### Prospecção (YouTube Music + Apify)
+
+| Nome                           | Default     | Descrição                                                           |
+|--------------------------------|-------------|---------------------------------------------------------------------|
+| `YOUTUBE_API_KEY`              | —           | API key do Google Cloud — YouTube Data API v3 (obrigatório)         |
+| `YTM_MAX_ARTISTS_PER_RUN`      | `20`        | Máximo de artistas retornados por raspagem                          |
+| `YTM_MIN_SUBSCRIBERS`          | `1000`      | Inscritos mínimos no YouTube — evita canais mortos                  |
+| `YTM_MAX_SUBSCRIBERS`          | `1000000`   | Inscritos máximos — evita superstars (já têm estúdio)               |
+| `YTM_PER_SEED_LIMIT`           | `10`        | Resultados por query-semente no YouTube Music                       |
+| `APIFY_TOKEN`                  | —           | Token do Apify (obrigatório para enriquecimento TikTok)             |
+| `APIFY_PROFILES_PER_PLATFORM`  | `15`        | Resultados TikTok por query (usado no enriquecimento social)        |
+
+### E-mail (opcional)
+
+| Nome            | Descrição                                                |
+|-----------------|----------------------------------------------------------|
+| `SMTP_USER`     | E-mail Gmail usado como remetente                        |
+| `SMTP_PASS`     | Senha de App do Gmail (não a senha normal da conta)      |
+| `SMTP_FROM_NAME`| Nome que aparece no "De" do e-mail                       |

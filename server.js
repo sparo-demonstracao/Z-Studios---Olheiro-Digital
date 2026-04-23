@@ -1,8 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
 const nodemailer = require('nodemailer');
+const ytMusic = require('./youtube-music');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +19,15 @@ const APIFY_PROFILES_PER_PLATFORM = Number(process.env.APIFY_PROFILES_PER_PLATFO
 const APIFY_ACTOR_TIKTOK = 'clockworks~tiktok-scraper';
 const APIFY_ACTOR_YOUTUBE = 'streamers~youtube-scraper';
 if (!APIFY_TOKEN) console.warn('[apify] APIFY_TOKEN não definido — /api/scrape e o cron diário vão falhar até a var ser configurada.');
+
+// ---------- YouTube Music discovery config ----------
+const YTM_MAX_ARTISTS_PER_RUN = Number(process.env.YTM_MAX_ARTISTS_PER_RUN || 20);
+const YTM_MIN_SUBSCRIBERS = Number(process.env.YTM_MIN_SUBSCRIBERS || 1000);
+const YTM_MAX_SUBSCRIBERS = Number(process.env.YTM_MAX_SUBSCRIBERS || 1_000_000);
+const YTM_PER_SEED_LIMIT = Number(process.env.YTM_PER_SEED_LIMIT || 10);
+if (!process.env.YOUTUBE_API_KEY) {
+  console.warn('[youtube] YOUTUBE_API_KEY não definida — /api/scrape vai falhar até configurar.');
+}
 let mailTransporter = null;
 if (SMTP_USER && SMTP_PASS) {
   // family: 4 força IPv4 (Railway tem problemas com IPv6 pra smtp.gmail.com).
@@ -185,8 +196,19 @@ async function getApifyDatasetItems(datasetId) {
   return Array.isArray(data) ? data : [];
 }
 
-// Pure transform: TikTok video items → unique-author Artists.
-function transformTiktokItems(items, query, maxProfiles) {
+// Normaliza nome pra matching cross-platform (remove acentos, pontuação, case).
+function normalizeName(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+// Pure transform: TikTok video items → mapa normalizedName → perfil agregado.
+// Ao contrário da versão anterior, não corta nem transforma em Artist — quem faz
+// o matching com os artistas do Spotify é o finalizeJob.
+function buildTiktokProfileMap(items) {
   const byAuthor = new Map();
   for (const item of items) {
     const meta = item.authorMeta || {};
@@ -194,6 +216,7 @@ function transformTiktokItems(items, query, maxProfiles) {
     if (!name) continue;
     if (!byAuthor.has(name)) {
       byAuthor.set(name, {
+        platform: 'tiktok',
         handle: '@' + name,
         displayName: meta.nickName || name,
         bio: meta.signature || '',
@@ -208,65 +231,142 @@ function transformTiktokItems(items, query, maxProfiles) {
     p.comments += Number(item.commentCount || 0);
     (item.hashtags || []).forEach(h => { if (h && h.name) p.hashtags.add(String(h.name).toLowerCase()); });
   }
-  return [...byAuthor.values()]
-    .sort((a, b) => b.followers - a.followers)
-    .slice(0, maxProfiles)
-    .map(p => toArtist(p, 'tiktok', query));
+  // Indexa por nome normalizado (display + handle) pra matching fuzzy
+  const byKey = new Map();
+  for (const p of byAuthor.values()) {
+    const keys = new Set([
+      normalizeName(p.displayName),
+      normalizeName(p.handle.replace(/^@/, ''))
+    ].filter(Boolean));
+    for (const k of keys) {
+      if (!byKey.has(k)) byKey.set(k, p);
+    }
+  }
+  return byKey;
+}
+
+// Dado um nome de artista (Spotify) e o mapa de perfis TikTok, acha o melhor match.
+// Estratégia: (1) nome exato normalizado; (2) subconjunto de tokens contidos.
+function matchTiktokProfile(spotifyName, profileMap) {
+  if (!profileMap || !profileMap.size) return null;
+  const target = normalizeName(spotifyName);
+  if (!target) return null;
+  if (profileMap.has(target)) return profileMap.get(target);
+  // Fuzzy: pega o profile cujos tokens batem com o nome do artista
+  const targetTokens = new Set(target.split(' ').filter(t => t.length >= 3));
+  if (!targetTokens.size) return null;
+  let best = null, bestScore = 0;
+  for (const [key, profile] of profileMap) {
+    const keyTokens = key.split(' ').filter(t => t.length >= 3);
+    if (!keyTokens.length) continue;
+    const hits = keyTokens.filter(t => targetTokens.has(t)).length;
+    const score = hits / Math.max(keyTokens.length, targetTokens.size);
+    if (score > bestScore && score >= 0.6) {
+      bestScore = score;
+      best = profile;
+    }
+  }
+  return best;
 }
 
 // Pure transform: YouTube video items → unique-channel Artists.
-function transformYoutubeItems(items, query, maxProfiles) {
-  const byChannel = new Map();
-  for (const item of items) {
-    const rawHandle = item.channelHandle || item.channelUsername || item.channelId;
-    if (!rawHandle) continue;
-    const key = String(rawHandle).toLowerCase();
-    if (!byChannel.has(key)) {
-      const handle = String(rawHandle).startsWith('@') ? rawHandle : ('@' + String(rawHandle).replace(/^@?/, ''));
-      byChannel.set(key, {
-        handle,
-        displayName: item.channelName || item.channelTitle || rawHandle,
-        bio: item.channelDescription || item.aboutChannelInfo?.description || '',
-        followers: Number(item.numberOfSubscribers || item.channelTotalSubscribers || 0),
-        views: 0, likes: 0, comments: 0,
-        hashtags: new Set()
-      });
-    }
-    const c = byChannel.get(key);
-    c.views += Number(item.viewCount || item.views || 0);
-    c.likes += Number(item.likes || 0);
-    c.comments += Number(item.commentsCount || item.comments || 0);
-    (item.hashtags || []).forEach(h => { if (h) c.hashtags.add(String(h).toLowerCase().replace(/^#/, '')); });
-    (item.text ? item.text.match(/#\w+/g) || [] : []).forEach(h => c.hashtags.add(h.slice(1).toLowerCase()));
-  }
-  return [...byChannel.values()]
-    .sort((a, b) => b.followers - a.followers)
-    .slice(0, maxProfiles)
-    .map(c => toArtist(c, 'youtube', query));
-}
+// Constrói um Artist combinando dados do YouTube Music (fonte da verdade: é artista real)
+// + perfil social do TikTok (opcional — enriquecimento de engajamento).
+function buildArtist(ytArtist, ttProfile, query) {
+  const name = ytArtist.name;
+  const channel = ytArtist.channel || {};
+  const stats = channel.statistics || {};
+  const snippet = channel.snippet || {};
+  const branding = channel.brandingSettings || {};
+  const topic = (channel.topicDetails && channel.topicDetails.topicCategories) || [];
 
-function toArtist(profile, platform, query) {
-  const engagement = profile.views > 0
-    ? Math.max(0, Math.min(99, Math.round(((profile.likes + profile.comments) / profile.views) * 100)))
-    : 0;
-  const email = extractEmail(profile.bio);
-  const genre = inferGenre([...profile.hashtags], query, profile.bio);
+  const ytSubscribers = Number(stats.subscriberCount || 0);
+  const ytViewCount = Number(stats.viewCount || 0);
+  const ytVideoCount = Number(stats.videoCount || 0);
+
+  // Engajamento: vem do TikTok se tiver match. Senão deriva de views/subs do YT.
+  let engagement = 0;
+  if (ttProfile && ttProfile.views > 0) {
+    engagement = Math.max(0, Math.min(99, Math.round(((ttProfile.likes + ttProfile.comments) / ttProfile.views) * 100)));
+  } else if (ytSubscribers > 0 && ytViewCount > 0) {
+    // Proxy: views por inscrito. Artista médio: ~10-30 views/sub em carreira toda.
+    const viewsPerSub = ytViewCount / ytSubscribers;
+    engagement = Math.min(22, Math.round(viewsPerSub / 3));
+  }
+
+  // Seguidores: prefere TikTok (mais líquido) se tiver, senão YT.
+  const socialFollowers = ttProfile ? ttProfile.followers : 0;
+  const displayFollowers = socialFollowers || ytSubscribers;
+
+  // Handle: TikTok se bateu, senão derivado do nome do artista.
+  const handle = ttProfile
+    ? ttProfile.handle
+    : '@' + String(name).toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+  // E-mail: só existe se o perfil TikTok ou descrição do canal tiver.
+  const email = (ttProfile && extractEmail(ttProfile.bio)) || extractEmail(snippet.description || branding.channel?.description);
+
+  // Gênero: topic do YT > hashtags do TikTok > inferência por query/bio.
+  let genre = ytMusic.normalizeGenre(topic, query);
+  if (genre === 'Indefinido' && ttProfile) {
+    const inferred = inferGenre([...(ttProfile.hashtags || [])], query, ttProfile.bio);
+    if (inferred !== 'Indefinido') genre = inferred;
+  }
+
+  // Thumbnail: prefere YT Data (HD) → fallback YT Music → sem imagem.
+  const ytThumb = snippet.thumbnails?.high?.url
+    || snippet.thumbnails?.medium?.url
+    || snippet.thumbnails?.default?.url
+    || (ytArtist.ytMusicData?.thumbnails && ytArtist.ytMusicData.thumbnails[0]?.url)
+    || null;
+
+  const ytMusicUrl = `https://music.youtube.com/channel/${ytArtist.artistId}`;
+  const ytChannelUrl = `https://www.youtube.com/channel/${ytArtist.artistId}`;
+
+  const score = computeArtistScore({
+    ytSubscribers,
+    socialFollowers,
+    engagement,
+    ytScore: ytArtist._score || 0,
+    hasSocial: !!ttProfile
+  });
+
   return {
-    id: 0, // set by caller
-    name: profile.displayName || profile.handle,
-    handle: profile.handle,
+    id: 0,
+    name,
+    handle,
     email,
     hasEmail: !!email,
-    platform,
+    platform: ttProfile ? 'tiktok' : 'youtube-music',
     genre,
-    followers: formatFollowers(profile.followers),
+    genresOfficial: topic.map(t => String(t).split('/').pop().replace(/_/g, ' ')),
+    followers: formatFollowers(displayFollowers),
+    followersRaw: displayFollowers,
+    ytSubscribers,
+    ytViewCount,
+    ytVideoCount,
     engagement,
     status: deriveStatus(engagement),
-    avatar: buildInitials(profile.displayName || profile.handle),
+    avatar: buildInitials(name),
+    ytMusicId: ytArtist.artistId,
+    ytMusicUrl,
+    ytChannelUrl,
+    imageUrl: ytThumb,
+    socialMatch: !!ttProfile,
+    score,
     crmAdded: false,
     scrapedAt: new Date().toISOString(),
-    query
+    query: query || ''
   };
+}
+
+function computeArtistScore({ ytSubscribers, socialFollowers, engagement, ytScore, hasSocial }) {
+  // Escala: 0-100. Peso: ytSubscribers (30), sweet-spot ytScore (30), engagement (20), presença social (20)
+  const subsScore = Math.min(100, Math.log10((ytSubscribers || 0) + 1) * 18);
+  const engScore = Math.min(100, (engagement || 0) * 4.5);
+  const socialScore = hasSocial ? 100 : 40;
+  const weighted = subsScore * 0.3 + (ytScore || 0) * 0.3 + engScore * 0.2 + socialScore * 0.2;
+  return Math.round(Math.min(100, weighted));
 }
 
 // ---------- Middleware ----------
@@ -298,8 +398,12 @@ function jobSnapshot(job) {
     query: job.query,
     phase: job.phase,
     elapsed: Math.floor((Date.now() - job.createdAt) / 1000),
-    tiktok:  { status: job.tiktok.status,  itemCount: job.tiktok.itemCount,  error: job.tiktok.error  },
-    youtube: { status: job.youtube.status, itemCount: job.youtube.itemCount, error: job.youtube.error },
+    ytMusic: {
+      status: job.ytMusic.status,
+      artistCount: job.ytMusic.artistCount,
+      error: job.ytMusic.error
+    },
+    tiktok: { status: job.tiktok.status, itemCount: job.tiktok.itemCount, error: job.tiktok.error },
     error: job.error
   };
 }
@@ -323,28 +427,15 @@ async function pollJob(jobId) {
   if (!job) return;
   if (job.phase === 'done' || job.phase === 'error' || job.phase === 'processing' || job.phase === 'saving') return;
 
-  const [tt, yt] = await Promise.all([
-    job.tiktok.runId  ? getApifyRun(job.tiktok.runId).catch(e => ({ _error: e.message }))  : Promise.resolve(null),
-    job.youtube.runId ? getApifyRun(job.youtube.runId).catch(e => ({ _error: e.message })) : Promise.resolve(null)
-  ]);
-
+  const tt = job.tiktok.runId ? await getApifyRun(job.tiktok.runId).catch(e => ({ _error: e.message })) : null;
   if (tt) {
     if (tt._error) job.tiktok.error = tt._error;
     else { job.tiktok.status = tt.status; job.tiktok.itemCount = tt.itemCount; }
   }
-  if (yt) {
-    if (yt._error) job.youtube.error = yt._error;
-    else { job.youtube.status = yt.status; job.youtube.itemCount = yt.itemCount; }
-  }
 
-  const ttDone = !job.tiktok.runId  || APIFY_TERMINAL_STATUSES.has(job.tiktok.status)  || !!job.tiktok.error;
-  const ytDone = !job.youtube.runId || APIFY_TERMINAL_STATUSES.has(job.youtube.status) || !!job.youtube.error;
+  const ttDone = !job.tiktok.runId || APIFY_TERMINAL_STATUSES.has(job.tiktok.status) || !!job.tiktok.error;
 
-  if (job.phase === 'starting' && (job.tiktok.status === 'RUNNING' || job.youtube.status === 'RUNNING')) {
-    job.phase = 'running';
-  }
-
-  if (ttDone && ytDone) {
+  if (job.phase === 'social_enrichment' && ttDone) {
     job.phase = 'processing';
     broadcast(job, 'status', jobSnapshot(job));
     if (job.pollTimer) { clearInterval(job.pollTimer); job.pollTimer = null; }
@@ -361,29 +452,33 @@ async function pollJob(jobId) {
 }
 
 async function finalizeJob(job) {
-  const perPlatform = APIFY_PROFILES_PER_PLATFORM;
-  let tiktokArtists = [], youtubeArtists = [];
-
-  const fetches = [];
+  // Fetch TikTok items (se houve run)
+  let ttProfileMap = new Map();
   if (job.tiktok.status === 'SUCCEEDED' && job.tiktok.datasetId) {
-    fetches.push(getApifyDatasetItems(job.tiktok.datasetId)
-      .then(items => { tiktokArtists = transformTiktokItems(items, job.query, perPlatform); })
-      .catch(e => { console.error(`[job ${job.id}] tiktok dataset`, e.message); job.tiktok.error = e.message; }));
+    try {
+      const items = await getApifyDatasetItems(job.tiktok.datasetId);
+      ttProfileMap = buildTiktokProfileMap(items);
+    } catch (e) {
+      console.error(`[job ${job.id}] tiktok dataset`, e.message);
+      job.tiktok.error = e.message;
+    }
   }
-  if (job.youtube.status === 'SUCCEEDED' && job.youtube.datasetId) {
-    fetches.push(getApifyDatasetItems(job.youtube.datasetId)
-      .then(items => { youtubeArtists = transformYoutubeItems(items, job.query, perPlatform); })
-      .catch(e => { console.error(`[job ${job.id}] youtube dataset`, e.message); job.youtube.error = e.message; }));
-  }
-  await Promise.all(fetches);
 
-  if (!tiktokArtists.length && !youtubeArtists.length && (job.tiktok.error || job.youtube.error)) {
+  const ytArtists = job.ytArtists || [];
+  if (!ytArtists.length) {
     job.phase = 'error';
-    job.error = `Ambas as coletas falharam. TikTok: ${job.tiktok.error || 'ok'} | YouTube: ${job.youtube.error || 'ok'}`;
+    job.error = job.ytMusic.error || 'Nenhum artista retornado pelo YouTube Music.';
     broadcast(job, 'error', { error: job.error });
     scheduleJobGC(job);
     return;
   }
+
+  let matched = 0;
+  const built = ytArtists.map(ya => {
+    const tt = matchTiktokProfile(ya.name, ttProfileMap);
+    if (tt) matched++;
+    return buildArtist(ya, tt, job.query);
+  });
 
   job.phase = 'saving';
   broadcast(job, 'status', jobSnapshot(job));
@@ -391,21 +486,24 @@ async function finalizeJob(job) {
   const existing = readArtists();
   const handleSet = new Set(existing.map(a => String(a.handle || '').toLowerCase()));
   const nameSet = new Set(existing.map(a => String(a.name || '').toLowerCase()));
+  const ytIdSet = new Set(existing.map(a => a.ytMusicId).filter(Boolean));
   let nextId = existing.reduce((m, a) => Math.max(m, a.id || 0), 0) + 1;
 
   const novel = [];
-  for (const cand of [...tiktokArtists, ...youtubeArtists]) {
+  for (const cand of built) {
     const h = String(cand.handle || '').toLowerCase();
     const n = String(cand.name || '').toLowerCase();
+    const yid = cand.ytMusicId;
+    if (yid && ytIdSet.has(yid)) continue;
     if (!h || handleSet.has(h) || nameSet.has(n)) continue;
     handleSet.add(h); nameSet.add(n);
+    if (yid) ytIdSet.add(yid);
     cand.id = nextId++;
     novel.push(cand);
   }
   const updated = existing.concat(novel);
   writeArtists(updated);
 
-  // Persist history for this run (both manual and cron, differentiated by job.type)
   const now = new Date().toISOString();
   const state = readState();
   if (job.type === 'manual') state.lastManualScrape = now;
@@ -421,42 +519,26 @@ async function finalizeJob(job) {
     artists: updated,
     query: job.query,
     diagnostics: {
-      tiktok: tiktokArtists.length,
-      youtube: youtubeArtists.length,
-      dedupedOut: (tiktokArtists.length + youtubeArtists.length) - novel.length,
+      ytMusic: ytArtists.length,
+      tiktokMatched: matched,
+      tiktokItems: ttProfileMap.size,
+      dedupedOut: built.length - novel.length,
       tiktokError: job.tiktok.error,
-      youtubeError: job.youtube.error
+      ytMusicError: job.ytMusic.error
     }
   };
   job.phase = 'done';
   broadcast(job, 'done', job.result);
-  console.log(`[job ${job.id}] ✅ done | tt=${tiktokArtists.length} yt=${youtubeArtists.length} new=${novel.length}`);
+  console.log(`[job ${job.id}] ✅ done | yt=${ytArtists.length} tt_matched=${matched}/${ttProfileMap.size} new=${novel.length}`);
   scheduleJobGC(job);
 }
 
 async function createScrapeJob({ query, type = 'manual' }) {
+  if (!process.env.YOUTUBE_API_KEY) {
+    throw new Error('YOUTUBE_API_KEY não configurada');
+  }
   if (!APIFY_TOKEN) throw new Error('APIFY_TOKEN não configurado');
   const q = String(query || '').trim();
-  if (!q) throw new Error('query é obrigatório');
-
-  const perPlatform = APIFY_PROFILES_PER_PLATFORM;
-  const [ttRun, ytRun] = await Promise.all([
-    startApifyRun(APIFY_ACTOR_TIKTOK, {
-      searchQueries: [q],
-      resultsPerPage: Math.max(perPlatform * 3, 30),
-      shouldDownloadVideos: false,
-      shouldDownloadCovers: false,
-      shouldDownloadSubtitles: false,
-      shouldDownloadSlideshowImages: false,
-      proxyCountryCode: 'None'
-    }).catch(e => ({ _error: e.message })),
-    startApifyRun(APIFY_ACTOR_YOUTUBE, {
-      searchKeywords: q,
-      maxResults: Math.max(perPlatform * 3, 30),
-      maxResultsShorts: 0,
-      maxResultsStreams: 0
-    }).catch(e => ({ _error: e.message }))
-  ]);
 
   const jobId = makeJobId();
   const job = {
@@ -464,21 +546,80 @@ async function createScrapeJob({ query, type = 'manual' }) {
     query: q,
     type,
     createdAt: Date.now(),
-    phase: 'starting',
-    tiktok:  { runId: ttRun && ttRun.runId  ? ttRun.runId  : null, datasetId: ttRun && ttRun.datasetId  ? ttRun.datasetId  : null, status: ttRun && ttRun._error ? 'FAILED' : 'READY', itemCount: 0, error: ttRun && ttRun._error ? ttRun._error : null },
-    youtube: { runId: ytRun && ytRun.runId  ? ytRun.runId  : null, datasetId: ytRun && ytRun.datasetId ? ytRun.datasetId : null, status: ytRun && ytRun._error ? 'FAILED' : 'READY', itemCount: 0, error: ytRun && ytRun._error ? ytRun._error : null },
+    phase: 'ytmusic_discovery',
+    ytMusic: { status: 'RUNNING', artistCount: 0, error: null },
+    tiktok: { runId: null, datasetId: null, status: 'PENDING', itemCount: 0, error: null },
+    ytArtists: [],
     result: null,
     error: null,
     listeners: new Set(),
     pollTimer: null
   };
   jobs.set(jobId, job);
-  console.log(`[job ${jobId}] 🚀 started query="${q}" tt=${job.tiktok.runId || 'fail'} yt=${job.youtube.runId || 'fail'}`);
+  console.log(`[job ${jobId}] 🚀 started query="${q || '(sem filtro)'}"`);
 
-  if (job.tiktok.status === 'FAILED' && job.youtube.status === 'FAILED') {
+  // Fase 1: descoberta YouTube Music
+  try {
+    const ytArtists = await ytMusic.discoverArtists({
+      maxArtists: YTM_MAX_ARTISTS_PER_RUN,
+      query: q,
+      minSubscribers: YTM_MIN_SUBSCRIBERS,
+      maxSubscribers: YTM_MAX_SUBSCRIBERS,
+      perSeedLimit: YTM_PER_SEED_LIMIT
+    });
+    job.ytArtists = ytArtists;
+    job.ytMusic.artistCount = ytArtists.length;
+    job.ytMusic.status = 'SUCCEEDED';
+    console.log(`[job ${jobId}] 🎵 youtube-music: ${ytArtists.length} artistas candidatos`);
+  } catch (err) {
+    job.ytMusic.status = 'FAILED';
+    job.ytMusic.error = err.message;
     job.phase = 'error';
-    job.error = `Falha ao iniciar actors. TikTok: ${job.tiktok.error} | YouTube: ${job.youtube.error}`;
+    job.error = `Descoberta YouTube Music falhou: ${err.message}`;
+    console.error(`[job ${jobId}] ❌ youtube-music`, err.message);
     scheduleJobGC(job);
+    return job;
+  }
+
+  if (!job.ytArtists.length) {
+    job.phase = 'error';
+    job.error = 'YouTube Music não retornou artistas dentro dos critérios. Relaxe os filtros (YTM_MIN/MAX_SUBSCRIBERS).';
+    scheduleJobGC(job);
+    return job;
+  }
+
+  // Fase 2: enriquecimento via TikTok — uma run batched com array de queries.
+  job.phase = 'social_enrichment';
+  broadcast(job, 'status', jobSnapshot(job));
+
+  const perPlatform = APIFY_PROFILES_PER_PLATFORM;
+  const ttRun = await startApifyRun(APIFY_ACTOR_TIKTOK, {
+    searchQueries: job.ytArtists.map(a => a.name),
+    resultsPerPage: Math.max(perPlatform, 10),
+    shouldDownloadVideos: false,
+    shouldDownloadCovers: false,
+    shouldDownloadSubtitles: false,
+    shouldDownloadSlideshowImages: false,
+    proxyCountryCode: 'None'
+  }).catch(e => ({ _error: e.message }));
+
+  job.tiktok.runId = ttRun && ttRun.runId ? ttRun.runId : null;
+  job.tiktok.datasetId = ttRun && ttRun.datasetId ? ttRun.datasetId : null;
+  job.tiktok.status = ttRun && ttRun._error ? 'FAILED' : 'READY';
+  job.tiktok.error = ttRun && ttRun._error ? ttRun._error : null;
+
+  if (job.tiktok.status === 'FAILED') {
+    // TikTok falhou, mas ainda temos Spotify — prossegue direto pro finalize.
+    console.warn(`[job ${jobId}] ⚠️  tiktok falhou ao iniciar: ${job.tiktok.error}. Prosseguindo sem enriquecimento.`);
+    job.phase = 'processing';
+    broadcast(job, 'status', jobSnapshot(job));
+    finalizeJob(job).catch(err => {
+      console.error(`[job ${job.id}] finalize threw`, err);
+      job.phase = 'error';
+      job.error = err.message || 'erro no processamento';
+      broadcast(job, 'error', { error: job.error });
+      scheduleJobGC(job);
+    });
   } else {
     job.pollTimer = setInterval(() => pollJob(jobId).catch(e => console.error(`[job ${jobId}] poll`, e)), JOB_POLL_MS);
     setImmediate(() => pollJob(jobId).catch(() => {}));
@@ -499,9 +640,12 @@ function waitForJob(job) {
 }
 
 app.post('/api/scrape', async (req, res) => {
+  // query é opcional — vira seed no YouTube Music (ex: "funk", "rap", "trap").
   const query = String((req.body && req.body.query) || '').trim();
-  if (!query) return res.status(400).json({ error: 'query é obrigatório' });
   if (!APIFY_TOKEN) return res.status(503).json({ error: 'APIFY_TOKEN não configurado no servidor' });
+  if (!process.env.YOUTUBE_API_KEY) {
+    return res.status(503).json({ error: 'YOUTUBE_API_KEY não configurada no servidor' });
+  }
   try {
     const job = await createScrapeJob({ query, type: 'manual' });
     res.status(201).json({ jobId: job.id });
@@ -558,16 +702,10 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Cron: prospeção diária às 08:00 (America/Sao_Paulo). Rotaciona entre queries
-// do nicho — 1 por dia — pra não queimar crédito do Apify e cobrir o espectro.
+// Cron: prospeção diária às 08:00 (America/Sao_Paulo). Rotaciona entre filtros de
+// gênero — 1 por dia — pra cobrir o espectro e economizar crédito do Apify.
 const DEFAULT_CRON_QUERIES = [
-  'funk brasileiro 2026',
-  'rap nacional novo',
-  'trap brasil novo',
-  'eletrônica brasil',
-  'funk 150 bpm',
-  'rap feminino brasil',
-  'funk consciente'
+  'funk', 'rap', 'trap', 'eletrônica', 'rap feminino', 'funk consciente', ''
 ];
 
 cron.schedule(`0 ${SCHEDULE_HOUR} * * *`, async () => {
@@ -575,13 +713,18 @@ cron.schedule(`0 ${SCHEDULE_HOUR} * * *`, async () => {
     console.warn('[cron] APIFY_TOKEN não definido — pulando prospeção diária.');
     return;
   }
+  if (!process.env.YOUTUBE_API_KEY) {
+    console.warn('[cron] YOUTUBE_API_KEY não definida — pulando prospeção diária.');
+    return;
+  }
   const dayIdx = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
   const query = DEFAULT_CRON_QUERIES[dayIdx % DEFAULT_CRON_QUERIES.length];
-  console.log(`[cron] 🕗 Daily prospection query="${query}" at ${new Date().toISOString()}`);
+  console.log(`[cron] 🕗 Daily prospection query="${query || '(sem filtro)'}" at ${new Date().toISOString()}`);
   try {
     const job = await createScrapeJob({ query, type: 'auto' });
     const result = await waitForJob(job);
-    console.log(`[cron] ✅ Added ${result.newArtists.length} new artists (tt=${result.diagnostics.tiktok}, yt=${result.diagnostics.youtube}). Total: ${result.artists.length}`);
+    const d = result.diagnostics || {};
+    console.log(`[cron] ✅ Added ${result.newArtists.length} new artists (ytmusic=${d.ytMusic}, matched=${d.tiktokMatched}). Total: ${result.artists.length}`);
   } catch (err) {
     console.error('[cron] ❌ Daily scrape failed', err);
   }

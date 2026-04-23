@@ -11,9 +11,11 @@
     "node": ">=18"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "jsdom": "^29.0.2",
     "node-cron": "^4.2.1",
-    "nodemailer": "^6.10.1"
+    "nodemailer": "^6.10.1",
+    "ytmusic-api": "^5.3.1"
   }
 }
