@@ -21,10 +21,13 @@ const APIFY_ACTOR_YOUTUBE = 'streamers~youtube-scraper';
 if (!APIFY_TOKEN) console.warn('[apify] APIFY_TOKEN não definido — /api/scrape e o cron diário vão falhar até a var ser configurada.');
 
 // ---------- YouTube Music discovery config ----------
+// Foco: artistas EMERGENTES (iniciantes/em ascensão). Por isso o teto padrão de
+// seguidores é baixo — superstars ficam de fora por padrão.
 const YTM_MAX_ARTISTS_PER_RUN = Number(process.env.YTM_MAX_ARTISTS_PER_RUN || 20);
-const YTM_MIN_SUBSCRIBERS = Number(process.env.YTM_MIN_SUBSCRIBERS || 1000);
-const YTM_MAX_SUBSCRIBERS = Number(process.env.YTM_MAX_SUBSCRIBERS || 1_000_000);
-const YTM_PER_SEED_LIMIT = Number(process.env.YTM_PER_SEED_LIMIT || 10);
+const YTM_MIN_SUBSCRIBERS = Number(process.env.YTM_MIN_SUBSCRIBERS || 500);
+const YTM_MAX_SUBSCRIBERS = Number(process.env.YTM_MAX_SUBSCRIBERS || 80_000);
+const YTM_PER_SEED_LIMIT = Number(process.env.YTM_PER_SEED_LIMIT || 15);
+const YTM_SEED_COUNT = Number(process.env.YTM_SEED_COUNT || 12);
 if (!process.env.YOUTUBE_API_KEY) {
   console.warn('[youtube] YOUTUBE_API_KEY não definida — /api/scrape vai falhar até configurar.');
 }
@@ -558,14 +561,20 @@ async function createScrapeJob({ query, type = 'manual' }) {
   jobs.set(jobId, job);
   console.log(`[job ${jobId}] 🚀 started query="${q || '(sem filtro)'}"`);
 
-  // Fase 1: descoberta YouTube Music
+  // Fase 1: descoberta YouTube Music — exclui artistas já no banco pra cada run
+  // explorar território novo (sem isso, as seeds devolvem sempre os mesmos tops).
+  const existingYtIds = readArtists()
+    .map(a => a.ytMusicId)
+    .filter(Boolean);
   try {
     const ytArtists = await ytMusic.discoverArtists({
       maxArtists: YTM_MAX_ARTISTS_PER_RUN,
       query: q,
       minSubscribers: YTM_MIN_SUBSCRIBERS,
       maxSubscribers: YTM_MAX_SUBSCRIBERS,
-      perSeedLimit: YTM_PER_SEED_LIMIT
+      perSeedLimit: YTM_PER_SEED_LIMIT,
+      seedCount: YTM_SEED_COUNT,
+      excludeIds: existingYtIds
     });
     job.ytArtists = ytArtists;
     job.ytMusic.artistCount = ytArtists.length;

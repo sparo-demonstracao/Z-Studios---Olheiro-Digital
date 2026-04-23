@@ -9,20 +9,48 @@
 
 const YT_DATA_API = 'https://www.googleapis.com/youtube/v3';
 
-// Seeds de busca cobrindo o nicho do Z Studios. Cada seed vira uma chamada
-// searchArtists no YT Music. Dedup por artistId depois.
-const DEFAULT_SEED_QUERIES = [
-  'funk brasileiro',
-  'funk carioca',
-  'funk tiktok',
-  'rap brasileiro',
-  'rap nacional',
-  'trap brasileiro',
-  'mc funk novo',
-  'dj funk',
-  'hip hop brasil',
-  'eletrônica brasil'
+// Seeds de busca montadas combinando gêneros × modificadores × prefixos.
+// Total de ~500 variações; por run pegamos uma amostra aleatória pra não ficar
+// preso sempre nos mesmos artistas ranqueados no topo do YT Music.
+const SEED_GENRES = [
+  'funk', 'funk carioca', 'funk mandelão', 'funk 150', 'funk bh', 'funk sp',
+  'funk paulista', 'funk rj', 'funk automotivo', 'funk melody',
+  'rap', 'rap nacional', 'rap sp', 'rap rj', 'rap consciente', 'rap feminino',
+  'trap', 'trap melódico', 'trap nacional', 'trap rj', 'drill brasileiro',
+  'hip hop brasil', 'hip hop nacional',
+  'phonk brasil', 'phonk brasileiro',
+  'eletrônica brasil', 'deep house brasil',
+  'sertanejo universitário novo', 'arrocha novo', 'piseiro novo', 'pagode novo'
 ];
+const SEED_MODIFIERS = [
+  '', 'novo', '2026', '2025', 'tiktok', 'viral', 'emergente',
+  'novinho', 'recente', 'underground', 'independente', 'lançamento'
+];
+const SEED_PREFIXES = ['', 'mc ', 'dj ', 'novo '];
+
+function buildAllSeeds() {
+  const out = new Set();
+  for (const g of SEED_GENRES) {
+    for (const m of SEED_MODIFIERS) {
+      for (const p of SEED_PREFIXES) {
+        const s = (p + g + ' ' + m).trim().replace(/\s+/g, ' ');
+        if (s.length >= 3) out.add(s);
+      }
+    }
+  }
+  return [...out];
+}
+
+function pickRandomSeeds(all, count) {
+  const copy = all.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, count);
+}
+
+const ALL_SEEDS = buildAllSeeds();
 
 // ytmusic-api é ESM. Em CommonJS usamos dynamic import e cacheamos a instância.
 let ytCache = { api: null, initPromise: null };
@@ -130,38 +158,71 @@ async function discoverArtists({
   maxArtists = 20,
   query = '',
   minSubscribers = 1000,
-  maxSubscribers = 1_000_000,
-  seedQueries = DEFAULT_SEED_QUERIES,
-  perSeedLimit = 10
+  maxSubscribers = 100_000,
+  seedCount = 12,
+  perSeedLimit = 15,
+  excludeIds = []
 } = {}) {
   const api = await getYTMusic();
+  const excludeSet = new Set(excludeIds);
 
-  // 1) Busca no YT Music — cada resultado é garantidamente um artista.
-  const queries = query ? [query] : seedQueries;
-  const artistMap = new Map(); // artistId → {name, thumbnails}
+  // 1) Seeds — se query vier preenchida, usa ela direto; senão amostra aleatória.
+  const queries = query
+    ? [query, `${query} novo`, `mc ${query}`, `${query} 2026`].filter(Boolean)
+    : pickRandomSeeds(ALL_SEEDS, seedCount);
+  console.log(`[ytmusic] ${queries.length} seeds:`, queries);
+
+  const artistMap = new Map(); // artistId → {name, thumbnails, source}
+
+  // 2a) searchArtists — resultados mais ranqueados (grandes primeiro)
   for (const q of queries) {
     try {
       const results = await api.searchArtists(q);
       for (const a of results.slice(0, perSeedLimit)) {
-        if (a.artistId && !artistMap.has(a.artistId)) {
-          artistMap.set(a.artistId, a);
+        if (!a.artistId || excludeSet.has(a.artistId)) continue;
+        if (!artistMap.has(a.artistId)) {
+          artistMap.set(a.artistId, { ...a, _source: 'artist-search', _seed: q });
         }
       }
     } catch (err) {
       console.warn(`[ytmusic] searchArtists("${q}") falhou: ${err.message}`);
-      // Se falhar repetidamente, reset pode ajudar (instância corrompida)
       if (/unauthor|403|context/i.test(err.message)) resetYTMusic();
     }
   }
 
+  // 2b) searchSongs — pega artistas de lançamentos recentes (menos mainstream)
+  // Só usa metade das seeds pra economizar chamadas.
+  const songSeeds = queries.slice(0, Math.ceil(queries.length / 2));
+  for (const q of songSeeds) {
+    try {
+      const songs = await api.searchSongs(q);
+      for (const s of songs.slice(0, perSeedLimit)) {
+        const a = s.artist;
+        if (!a || !a.artistId || excludeSet.has(a.artistId)) continue;
+        if (!artistMap.has(a.artistId)) {
+          artistMap.set(a.artistId, {
+            artistId: a.artistId,
+            name: a.name,
+            thumbnails: s.thumbnails || [],
+            _source: 'song-search',
+            _seed: q
+          });
+        }
+      }
+    } catch (err) {
+      console.warn(`[ytmusic] searchSongs("${q}") falhou: ${err.message}`);
+    }
+  }
+
+  console.log(`[ytmusic] ${artistMap.size} artistas únicos antes do enriquecimento`);
   if (!artistMap.size) return [];
 
-  // 2) Enriquecimento via YT Data API (subscribers, topic, country, thumb HD)
+  // 3) Enriquecimento via YT Data API (subscribers, topic, country, thumb HD)
   const ids = [...artistMap.keys()];
   const channels = await getChannelsBatch(ids);
   const channelById = new Map(channels.map(c => [c.id, c]));
 
-  // 3) Merge + filtro + scoring
+  // 4) Merge + filtro + scoring
   const merged = [];
   for (const [artistId, ytMusicArtist] of artistMap) {
     const channel = channelById.get(artistId);
@@ -179,11 +240,19 @@ async function discoverArtists({
     return rising.length > 0;
   });
 
+  console.log(`[ytmusic] ${filtered.length} passaram no filtro (${minSubscribers}-${maxSubscribers} subs, tópico musical, BR)`);
+
   const scored = filtered.map(item => ({
     ...item,
     _score: computeChannelScore(item.channel)
   }));
-  scored.sort((a, b) => b._score - a._score);
+  // Ordenação: menores primeiro dentro do sweet-spot (mais "em ascensão")
+  scored.sort((a, b) => {
+    const subsA = Number(a.channel.statistics.subscriberCount || 0);
+    const subsB = Number(b.channel.statistics.subscriberCount || 0);
+    // Prioriza quem está MAIS perto do minSubscribers (artistas menores)
+    return subsA - subsB;
+  });
 
   return scored.slice(0, maxArtists);
 }
