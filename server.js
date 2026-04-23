@@ -282,16 +282,111 @@ app.get('/api/artists', (req, res) => {
   res.json({ artists: readArtists() });
 });
 
-// Shared real-scrape pipeline. Runs both actors in parallel, dedupes against
-// existing artists by handle + name (case-insensitive), persists and returns.
-async function runScrape(query, { perPlatform = APIFY_PROFILES_PER_PLATFORM } = {}) {
-  const q = String(query || '').trim();
-  if (!q) throw new Error('query é obrigatório');
+// ---------- Scrape job store + SSE streaming ----------
+// In-memory only. Jobs live ~5min after terminal for late reconnects, then GC.
+const jobs = new Map();
+const JOB_POLL_MS = 2000;
+const JOB_GC_MS = 5 * 60 * 1000;
 
-  const [tiktokArtists, youtubeArtists] = await Promise.all([
-    scrapeTiktok(q, perPlatform).catch(err => { console.error('[scrape/tiktok]', err.message); return []; }),
-    scrapeYoutube(q, perPlatform).catch(err => { console.error('[scrape/youtube]', err.message); return []; })
+function makeJobId() {
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function jobSnapshot(job) {
+  return {
+    id: job.id,
+    query: job.query,
+    phase: job.phase,
+    elapsed: Math.floor((Date.now() - job.createdAt) / 1000),
+    tiktok:  { status: job.tiktok.status,  itemCount: job.tiktok.itemCount,  error: job.tiktok.error  },
+    youtube: { status: job.youtube.status, itemCount: job.youtube.itemCount, error: job.youtube.error },
+    error: job.error
+  };
+}
+
+function broadcast(job, event, data) {
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const res of job.listeners) {
+    try { res.write(payload); } catch (_) { /* listener gone */ }
+  }
+}
+
+function scheduleJobGC(job) {
+  setTimeout(() => {
+    for (const res of job.listeners) { try { res.end(); } catch (_) {} }
+    jobs.delete(job.id);
+  }, JOB_GC_MS);
+}
+
+async function pollJob(jobId) {
+  const job = jobs.get(jobId);
+  if (!job) return;
+  if (job.phase === 'done' || job.phase === 'error' || job.phase === 'processing' || job.phase === 'saving') return;
+
+  const [tt, yt] = await Promise.all([
+    job.tiktok.runId  ? getApifyRun(job.tiktok.runId).catch(e => ({ _error: e.message }))  : Promise.resolve(null),
+    job.youtube.runId ? getApifyRun(job.youtube.runId).catch(e => ({ _error: e.message })) : Promise.resolve(null)
   ]);
+
+  if (tt) {
+    if (tt._error) job.tiktok.error = tt._error;
+    else { job.tiktok.status = tt.status; job.tiktok.itemCount = tt.itemCount; }
+  }
+  if (yt) {
+    if (yt._error) job.youtube.error = yt._error;
+    else { job.youtube.status = yt.status; job.youtube.itemCount = yt.itemCount; }
+  }
+
+  const ttDone = !job.tiktok.runId  || APIFY_TERMINAL_STATUSES.has(job.tiktok.status)  || !!job.tiktok.error;
+  const ytDone = !job.youtube.runId || APIFY_TERMINAL_STATUSES.has(job.youtube.status) || !!job.youtube.error;
+
+  if (job.phase === 'starting' && (job.tiktok.status === 'RUNNING' || job.youtube.status === 'RUNNING')) {
+    job.phase = 'running';
+  }
+
+  if (ttDone && ytDone) {
+    job.phase = 'processing';
+    broadcast(job, 'status', jobSnapshot(job));
+    if (job.pollTimer) { clearInterval(job.pollTimer); job.pollTimer = null; }
+    finalizeJob(job).catch(err => {
+      console.error(`[job ${job.id}] finalize threw`, err);
+      job.phase = 'error';
+      job.error = err.message || 'erro no processamento';
+      broadcast(job, 'error', { error: job.error });
+      scheduleJobGC(job);
+    });
+  } else {
+    broadcast(job, 'status', jobSnapshot(job));
+  }
+}
+
+async function finalizeJob(job) {
+  const perPlatform = APIFY_PROFILES_PER_PLATFORM;
+  let tiktokArtists = [], youtubeArtists = [];
+
+  const fetches = [];
+  if (job.tiktok.status === 'SUCCEEDED' && job.tiktok.datasetId) {
+    fetches.push(getApifyDatasetItems(job.tiktok.datasetId)
+      .then(items => { tiktokArtists = transformTiktokItems(items, job.query, perPlatform); })
+      .catch(e => { console.error(`[job ${job.id}] tiktok dataset`, e.message); job.tiktok.error = e.message; }));
+  }
+  if (job.youtube.status === 'SUCCEEDED' && job.youtube.datasetId) {
+    fetches.push(getApifyDatasetItems(job.youtube.datasetId)
+      .then(items => { youtubeArtists = transformYoutubeItems(items, job.query, perPlatform); })
+      .catch(e => { console.error(`[job ${job.id}] youtube dataset`, e.message); job.youtube.error = e.message; }));
+  }
+  await Promise.all(fetches);
+
+  if (!tiktokArtists.length && !youtubeArtists.length && (job.tiktok.error || job.youtube.error)) {
+    job.phase = 'error';
+    job.error = `Ambas as coletas falharam. TikTok: ${job.tiktok.error || 'ok'} | YouTube: ${job.youtube.error || 'ok'}`;
+    broadcast(job, 'error', { error: job.error });
+    scheduleJobGC(job);
+    return;
+  }
+
+  job.phase = 'saving';
+  broadcast(job, 'status', jobSnapshot(job));
 
   const existing = readArtists();
   const handleSet = new Set(existing.map(a => String(a.handle || '').toLowerCase()));
@@ -307,36 +402,147 @@ async function runScrape(query, { perPlatform = APIFY_PROFILES_PER_PLATFORM } = 
     cand.id = nextId++;
     novel.push(cand);
   }
-
   const updated = existing.concat(novel);
   writeArtists(updated);
-  return {
+
+  // Persist history for this run (both manual and cron, differentiated by job.type)
+  const now = new Date().toISOString();
+  const state = readState();
+  if (job.type === 'manual') state.lastManualScrape = now;
+  else if (job.type === 'auto') state.lastAutoScrape = now;
+  state.history = [
+    { type: job.type, at: now, count: novel.length, query: job.query },
+    ...(state.history || [])
+  ].slice(0, 20);
+  writeState(state);
+
+  job.result = {
     newArtists: novel,
     artists: updated,
-    query: q,
-    diagnostics: { tiktok: tiktokArtists.length, youtube: youtubeArtists.length, dedupedOut: (tiktokArtists.length + youtubeArtists.length) - novel.length }
+    query: job.query,
+    diagnostics: {
+      tiktok: tiktokArtists.length,
+      youtube: youtubeArtists.length,
+      dedupedOut: (tiktokArtists.length + youtubeArtists.length) - novel.length,
+      tiktokError: job.tiktok.error,
+      youtubeError: job.youtube.error
+    }
   };
+  job.phase = 'done';
+  broadcast(job, 'done', job.result);
+  console.log(`[job ${job.id}] ✅ done | tt=${tiktokArtists.length} yt=${youtubeArtists.length} new=${novel.length}`);
+  scheduleJobGC(job);
+}
+
+async function createScrapeJob({ query, type = 'manual' }) {
+  if (!APIFY_TOKEN) throw new Error('APIFY_TOKEN não configurado');
+  const q = String(query || '').trim();
+  if (!q) throw new Error('query é obrigatório');
+
+  const perPlatform = APIFY_PROFILES_PER_PLATFORM;
+  const [ttRun, ytRun] = await Promise.all([
+    startApifyRun(APIFY_ACTOR_TIKTOK, {
+      searchQueries: [q],
+      resultsPerPage: Math.max(perPlatform * 3, 30),
+      shouldDownloadVideos: false,
+      shouldDownloadCovers: false,
+      shouldDownloadSubtitles: false,
+      shouldDownloadSlideshowImages: false,
+      proxyCountryCode: 'None'
+    }).catch(e => ({ _error: e.message })),
+    startApifyRun(APIFY_ACTOR_YOUTUBE, {
+      searchKeywords: q,
+      maxResults: Math.max(perPlatform * 3, 30),
+      maxResultsShorts: 0,
+      maxResultsStreams: 0
+    }).catch(e => ({ _error: e.message }))
+  ]);
+
+  const jobId = makeJobId();
+  const job = {
+    id: jobId,
+    query: q,
+    type,
+    createdAt: Date.now(),
+    phase: 'starting',
+    tiktok:  { runId: ttRun && ttRun.runId  ? ttRun.runId  : null, datasetId: ttRun && ttRun.datasetId  ? ttRun.datasetId  : null, status: ttRun && ttRun._error ? 'FAILED' : 'READY', itemCount: 0, error: ttRun && ttRun._error ? ttRun._error : null },
+    youtube: { runId: ytRun && ytRun.runId  ? ytRun.runId  : null, datasetId: ytRun && ytRun.datasetId ? ytRun.datasetId : null, status: ytRun && ytRun._error ? 'FAILED' : 'READY', itemCount: 0, error: ytRun && ytRun._error ? ytRun._error : null },
+    result: null,
+    error: null,
+    listeners: new Set(),
+    pollTimer: null
+  };
+  jobs.set(jobId, job);
+  console.log(`[job ${jobId}] 🚀 started query="${q}" tt=${job.tiktok.runId || 'fail'} yt=${job.youtube.runId || 'fail'}`);
+
+  if (job.tiktok.status === 'FAILED' && job.youtube.status === 'FAILED') {
+    job.phase = 'error';
+    job.error = `Falha ao iniciar actors. TikTok: ${job.tiktok.error} | YouTube: ${job.youtube.error}`;
+    scheduleJobGC(job);
+  } else {
+    job.pollTimer = setInterval(() => pollJob(jobId).catch(e => console.error(`[job ${jobId}] poll`, e)), JOB_POLL_MS);
+    setImmediate(() => pollJob(jobId).catch(() => {}));
+  }
+  return job;
+}
+
+// Promise that resolves to the final result (or rejects). Used by the cron.
+function waitForJob(job) {
+  return new Promise((resolve, reject) => {
+    const tick = () => {
+      if (job.phase === 'done')  return resolve(job.result);
+      if (job.phase === 'error') return reject(new Error(job.error || 'scrape falhou'));
+      setTimeout(tick, 1000);
+    };
+    tick();
+  });
 }
 
 app.post('/api/scrape', async (req, res) => {
   const query = String((req.body && req.body.query) || '').trim();
   if (!query) return res.status(400).json({ error: 'query é obrigatório' });
   if (!APIFY_TOKEN) return res.status(503).json({ error: 'APIFY_TOKEN não configurado no servidor' });
-
   try {
-    const result = await runScrape(query);
-    const state = readState();
-    state.lastManualScrape = new Date().toISOString();
-    state.history = [
-      { type: 'manual', at: state.lastManualScrape, count: result.newArtists.length, query },
-      ...(state.history || [])
-    ].slice(0, 20);
-    writeState(state);
-    res.json(result);
+    const job = await createScrapeJob({ query, type: 'manual' });
+    res.status(201).json({ jobId: job.id });
   } catch (err) {
-    console.error('[scrape] failed', err);
-    res.status(500).json({ error: err.message || 'Falha no scrape' });
+    console.error('[scrape] failed to start', err);
+    res.status(500).json({ error: err.message || 'Falha ao iniciar scrape' });
   }
+});
+
+// Polling fallback — returns current snapshot. Also returns final payload on `done`.
+app.get('/api/scrape/:jobId', (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'job não encontrado' });
+  const body = { phase: job.phase, snapshot: jobSnapshot(job) };
+  if (job.phase === 'done')  body.result = job.result;
+  if (job.phase === 'error') body.error  = job.error;
+  res.json(body);
+});
+
+// SSE stream of job events.
+app.get('/api/scrape/:jobId/stream', (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) return res.status(404).end();
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  res.flushHeaders && res.flushHeaders();
+  res.write(`event: status\ndata: ${JSON.stringify(jobSnapshot(job))}\n\n`);
+  if (job.phase === 'done')  res.write(`event: done\ndata: ${JSON.stringify(job.result)}\n\n`);
+  if (job.phase === 'error') res.write(`event: error\ndata: ${JSON.stringify({ error: job.error })}\n\n`);
+
+  const keepalive = setInterval(() => { try { res.write(': ping\n\n'); } catch (_) {} }, 15000);
+  job.listeners.add(res);
+  req.on('close', () => {
+    clearInterval(keepalive);
+    job.listeners.delete(res);
+    try { res.end(); } catch (_) {}
+  });
 });
 
 app.get('/api/status', (req, res) => {
@@ -373,14 +579,8 @@ cron.schedule(`0 ${SCHEDULE_HOUR} * * *`, async () => {
   const query = DEFAULT_CRON_QUERIES[dayIdx % DEFAULT_CRON_QUERIES.length];
   console.log(`[cron] 🕗 Daily prospection query="${query}" at ${new Date().toISOString()}`);
   try {
-    const result = await runScrape(query);
-    const state = readState();
-    state.lastAutoScrape = new Date().toISOString();
-    state.history = [
-      { type: 'auto', at: state.lastAutoScrape, count: result.newArtists.length, query },
-      ...(state.history || [])
-    ].slice(0, 20);
-    writeState(state);
+    const job = await createScrapeJob({ query, type: 'auto' });
+    const result = await waitForJob(job);
     console.log(`[cron] ✅ Added ${result.newArtists.length} new artists (tt=${result.diagnostics.tiktok}, yt=${result.diagnostics.youtube}). Total: ${result.artists.length}`);
   } catch (err) {
     console.error('[cron] ❌ Daily scrape failed', err);
