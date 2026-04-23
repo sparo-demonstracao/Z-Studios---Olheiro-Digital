@@ -144,34 +144,49 @@ function buildInitials(name) {
   return (a + b).toUpperCase();
 }
 
-async function runApifyActor(actorId, input, { timeoutMs = 10 * 60 * 1000 } = {}) {
+// ---------- Apify API: async run + poll + dataset ----------
+const APIFY_API = 'https://api.apify.com/v2';
+const APIFY_TERMINAL_STATUSES = new Set(['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']);
+
+async function startApifyRun(actorId, input) {
   if (!APIFY_TOKEN) throw new Error('APIFY_TOKEN não configurado');
-  const url = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${encodeURIComponent(APIFY_TOKEN)}`;
+  const url = `${APIFY_API}/acts/${actorId}/runs?token=${encodeURIComponent(APIFY_TOKEN)}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
-    signal: AbortSignal.timeout(timeoutMs)
+    signal: AbortSignal.timeout(30_000)
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`Apify ${actorId} respondeu ${res.status}: ${body.slice(0, 300)}`);
+    throw new Error(`Apify start ${actorId} ${res.status}: ${body.slice(0, 300)}`);
   }
+  const body = await res.json();
+  const data = body.data || {};
+  return { runId: data.id, datasetId: data.defaultDatasetId, status: data.status };
+}
+
+async function getApifyRun(runId) {
+  const url = `${APIFY_API}/actor-runs/${runId}?token=${encodeURIComponent(APIFY_TOKEN)}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) throw new Error(`Apify get run ${runId} ${res.status}`);
+  const body = await res.json();
+  const data = body.data || {};
+  const stats = data.stats || {};
+  const itemCount = stats.datasetItemCount ?? stats.itemsPublished ?? data.itemCount ?? 0;
+  return { status: data.status, itemCount: Number(itemCount) || 0 };
+}
+
+async function getApifyDatasetItems(datasetId) {
+  const url = `${APIFY_API}/datasets/${datasetId}/items?token=${encodeURIComponent(APIFY_TOKEN)}&format=json&clean=1`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+  if (!res.ok) throw new Error(`Apify dataset ${datasetId} ${res.status}`);
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
 
-// Aggregate TikTok video results into unique authors, then map each to an Artist.
-async function scrapeTiktok(query, maxProfiles) {
-  const items = await runApifyActor(APIFY_ACTOR_TIKTOK, {
-    searchQueries: [query],
-    resultsPerPage: Math.max(maxProfiles * 3, 30),
-    shouldDownloadVideos: false,
-    shouldDownloadCovers: false,
-    shouldDownloadSubtitles: false,
-    shouldDownloadSlideshowImages: false,
-    proxyCountryCode: 'None'
-  });
+// Pure transform: TikTok video items → unique-author Artists.
+function transformTiktokItems(items, query, maxProfiles) {
   const byAuthor = new Map();
   for (const item of items) {
     const meta = item.authorMeta || {};
@@ -199,14 +214,8 @@ async function scrapeTiktok(query, maxProfiles) {
     .map(p => toArtist(p, 'tiktok', query));
 }
 
-// Aggregate YouTube video results into unique channels.
-async function scrapeYoutube(query, maxProfiles) {
-  const items = await runApifyActor(APIFY_ACTOR_YOUTUBE, {
-    searchKeywords: query,
-    maxResults: Math.max(maxProfiles * 3, 30),
-    maxResultsShorts: 0,
-    maxResultsStreams: 0
-  });
+// Pure transform: YouTube video items → unique-channel Artists.
+function transformYoutubeItems(items, query, maxProfiles) {
   const byChannel = new Map();
   for (const item of items) {
     const rawHandle = item.channelHandle || item.channelUsername || item.channelId;
