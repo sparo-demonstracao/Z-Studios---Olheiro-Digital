@@ -711,6 +711,38 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// Admin: inspeciona o estado atual do banco — útil pra debug remoto.
+app.get('/api/admin/state', (req, res) => {
+  const artists = readArtists();
+  const byPlatform = {};
+  artists.forEach(a => { byPlatform[a.platform || 'unknown'] = (byPlatform[a.platform || 'unknown'] || 0) + 1; });
+  const withYtId = artists.filter(a => a.ytMusicId).length;
+  const scraped = artists.filter(a => a.scrapedAt).sort((a, b) => (b.scrapedAt || '').localeCompare(a.scrapedAt || '')).slice(0, 10);
+  res.json({
+    total: artists.length,
+    withYtMusicId: withYtId,
+    byPlatform,
+    last10Scraped: scraped.map(a => ({ id: a.id, name: a.name, platform: a.platform, ytMusicId: a.ytMusicId || null, scrapedAt: a.scrapedAt })),
+    ytMusicIdsCount: artists.map(a => a.ytMusicId).filter(Boolean).length
+  });
+});
+
+// Admin: reseta o banco de volta ao seed. Exige ?confirm=sim pra evitar acidente.
+app.post('/api/admin/reset-data', (req, res) => {
+  if (req.query.confirm !== 'sim') {
+    return res.status(400).json({ error: 'Adicione ?confirm=sim na URL pra confirmar o reset.' });
+  }
+  try {
+    if (fs.existsSync(DATA_FILE)) fs.unlinkSync(DATA_FILE);
+    ensureDataFile();
+    const artists = readArtists();
+    console.log(`[admin] 🧹 reset-data executado. Banco voltou a ${artists.length} artistas do seed.`);
+    res.json({ ok: true, total: artists.length, message: 'Banco resetado pro seed.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Cron: prospeção diária às 08:00 (America/Sao_Paulo). Rotaciona entre filtros de
 // gênero — 1 por dia — pra cobrir o espectro e economizar crédito do Apify.
 const DEFAULT_CRON_QUERIES = [
