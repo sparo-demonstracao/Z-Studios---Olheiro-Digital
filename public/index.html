@@ -1810,19 +1810,7 @@ document.getElementById('refreshBtn').addEventListener('click', async () => {
   const text = document.getElementById('refreshText');
   const queryInput = document.getElementById('scrapeQuery');
   const query = (queryInput.value || '').trim();
-  if (!query) {
-    queryInput.focus();
-    queryInput.classList.add('border-red-400/60');
-    setTimeout(() => queryInput.classList.remove('border-red-400/60'), 1500);
-    toast({
-      title: 'Digite o que buscar',
-      message: 'Ex: "funk 150", "rap drill brasil", "trap melódico".',
-      variant: 'info',
-      icon: '🔎',
-      timeout: 3500
-    });
-    return;
-  }
+  // Campo é opcional: vazio = varre todos os gêneros BR; preenchido = foca em um gênero.
   btn.disabled = true;
   btn.classList.add('opacity-80');
   icon.classList.add('spin');
